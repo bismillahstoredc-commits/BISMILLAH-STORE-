@@ -634,7 +634,7 @@ function softRefreshCurrentPage(){
 <input type="file" id="restoreInput" accept=".json" style="display:none">
 
 <div class="modal" id="modal"><div class="modal-box"><div class="modal-head"><h2 id="modalTitle">Entry</h2><button class="close" onclick="closeModal()">×</button></div><div id="modalBody"></div></div></div>
-<div class="modal" id="cameraScanModal" style="z-index:200"><div class="modal-box"><div class="modal-head"><h2 style="font-size:17px">📷 ক্যামেরা দিয়ে Barcode Scan</h2><button class="close" onclick="closeCameraScan()">×</button></div><div id="cameraScanReader"></div><div id="cameraScanStatus">ক্যামেরা চালু হচ্ছে...</div><button class="btn secondary" style="margin-top:12px;width:100%" onclick="closeCameraScan()">বন্ধ করুন</button></div></div>
+<div class="modal" id="cameraScanModal" style="z-index:200"><div class="modal-box"><div class="modal-head"><h2 style="font-size:17px">📷 ক্যামেরা দিয়ে Barcode Scan (একাধিক পণ্য)</h2><button class="close" onclick="closeCameraScan()">×</button></div><div id="cameraScanReader"></div><div id="cameraScanStatus">ক্যামেরা চালু হচ্ছে...</div><button class="btn secondary" style="margin-top:12px;width:100%" onclick="closeCameraScan()">✅ স্ক্যান শেষ, বন্ধ করুন</button></div></div>
 
 <script>
 // Explicit DOM references for reliable operation in all browsers
@@ -2444,10 +2444,14 @@ v21EnsureProductReturns();
 </script>
 <script>
 /* Camera barcode scanner (mobile camera) for Sales / Purchase POS */
-let _cameraScanner=null, _cameraScanMode='sales';
+let _cameraScanner=null, _cameraScanMode='sales', _cameraScanHandled=false, _lastScannedCode=null, _lastScannedAt=0, _cameraScanCount=0;
 
 function openCameraScan(mode){
   _cameraScanMode = mode || 'sales';
+  _cameraScanHandled = false;
+  _lastScannedCode = null;
+  _lastScannedAt = 0;
+  _cameraScanCount = 0;
   const modalEl=document.getElementById('cameraScanModal');
   const statusEl=document.getElementById('cameraScanStatus');
   const readerEl=document.getElementById('cameraScanReader');
@@ -2473,13 +2477,24 @@ function openCameraScan(mode){
       camId,
       { fps: 10, qrbox: { width: 260, height: 160 } },
       function(decodedText){
-        if(statusEl) statusEl.textContent='✅ পাওয়া গেছে: '+decodedText;
+        if(_cameraScanHandled) return;
+        // Ignore the exact same barcode scanned again within the cooldown window —
+        // the camera keeps seeing the same physical barcode for a moment after a hit.
+        const now=Date.now();
+        if(decodedText===_lastScannedCode && (now-_lastScannedAt)<1800) return;
+        _cameraScanHandled = true;
+        _lastScannedCode = decodedText;
+        _lastScannedAt = now;
+        _cameraScanCount++;
+        if(statusEl) statusEl.textContent='✅ ('+_cameraScanCount+') পাওয়া গেছে: '+decodedText+' — পরের পণ্য স্ক্যান করুন, শেষ হলে "বন্ধ করুন"-এ চাপুন।';
         handleBarcodeScanned(decodedText, _cameraScanMode);
-        closeCameraScan();
+        // Stay open for continuous scanning — just re-arm after a brief cooldown
+        // instead of closing the camera after every single item.
+        setTimeout(()=>{ _cameraScanHandled=false; },700);
       },
       function(){ /* scan failure per-frame, ignore */ }
     ).then(function(){
-      statusEl.textContent='বারকোডের দিকে ক্যামেরা ধরুন...';
+      statusEl.textContent='বারকোডের দিকে ক্যামেরা ধরুন... (একাধিক পণ্য একটানা স্ক্যান করা যাবে)';
     }).catch(function(err){
       statusEl.textContent='ক্যামেরা চালু করা যায়নি: '+(err && err.message ? err.message : err);
     });
@@ -2503,9 +2518,27 @@ function handleBarcodeScanned(code, mode){
   code=(code||'').trim();
   if(!code) return;
   if(mode==='purchase'){
-    const el=document.getElementById('purBarcode');
-    if(el) el.value=code;
-    if(typeof purchaseBarcodeKey==='function') purchaseBarcodeKey({key:'Enter',preventDefault:function(){}});
+    // Directly add the product instead of round-tripping through the text field + simulated
+    // Enter keypress — this avoids silently failing if the purchase modal/DOM was momentarily
+    // not ready (e.g. right after the camera permission prompt on some mobile browsers).
+    const modalOpen = document.getElementById('modal')?.classList.contains('show');
+    const el = document.getElementById('purBarcode');
+    if(!modalOpen || !el){
+      alert('ক্রয় Invoice ফর্মটি খোলা নেই। "নতুন ক্রয়" থেকে আবার শুরু করুন, তারপর ক্যামেরা স্ক্যান করুন।');
+      return;
+    }
+    const p=biz().products.find(x=>String(x.barcode||'').toLowerCase()===code.toLowerCase());
+    if(!p){
+      alert('এই Barcode ("'+code+'") এর কোনো পণ্য পাওয়া যায়নি।');
+      el.value=code; el.select();
+      return;
+    }
+    addPurchasePOSProduct(p.id);
+    el.value='';
+    if(typeof renderPurchaseProducts==='function') renderPurchaseProducts();
+    if(typeof renderPurchasePOSItems==='function') renderPurchasePOSItems();
+    if(typeof purchasePOSRecalc==='function') purchasePOSRecalc();
+    setTimeout(()=>el.focus(),30);
   }else{
     const el=document.getElementById('posBarcode');
     if(el) el.value=code;

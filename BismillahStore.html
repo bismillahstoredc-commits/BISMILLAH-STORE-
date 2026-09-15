@@ -674,6 +674,10 @@ try{
     localStorage.setItem(RESET_MARK,'done');
   }
 }catch(e){ console.error('Clean start error',e); }
+// Multi-device sync fix: keep a snapshot of the last-saved state so we can tell exactly
+// which records changed on THIS device since the last save/sync (see stampChangedRecords below).
+let _lastSavedSnapshot=null;
+try{ _lastSavedSnapshot=JSON.parse(JSON.stringify(db)); }catch(e){ _lastSavedSnapshot=null; }
 function save(){
   try{
     localStorage.setItem(KEY,JSON.stringify(db));
@@ -1454,13 +1458,53 @@ function restoreSafetyBackup(i){
   alert('✅ Backup থেকে ডেটা ফিরিয়ে আনা হয়েছে।');
 }
 
-/* ===== Non-destructive Merge: union by id, never deletes local-only or remote-only records ===== */
+/* ===== Non-destructive Merge: union by id, never deletes local-only or remote-only records =====
+   Fix (report/stock mismatch across devices): on an id-collision we used to ALWAYS keep the
+   local copy, even if the remote copy was actually the newer edit (e.g. a purchase/stock update
+   made on the other device). That silently discarded newer changes and caused Stock Value /
+   reports to differ between devices. Now we compare each record's updatedAt timestamp and keep
+   whichever side is actually newer; only fall back to "keep local" when there's a tie or neither
+   side has a timestamp yet (older data saved before this fix), so old behavior is preserved there. */
 function mergeArraysById(localArr,remoteArr){
   localArr=Array.isArray(localArr)?localArr:[]; remoteArr=Array.isArray(remoteArr)?remoteArr:[];
   const map=new Map();
   remoteArr.forEach(item=>{ if(item&&item.id!=null) map.set(item.id,item); });
-  localArr.forEach(item=>{ if(item&&item.id!=null) map.set(item.id,item); }); // local wins only on exact id-collision; nothing is ever dropped
+  localArr.forEach(item=>{
+    if(!item||item.id==null)return;
+    const existing=map.get(item.id);
+    if(!existing){ map.set(item.id,item); return; } // local-only record: nothing is ever dropped
+    const localT=Number(item.updatedAt)||0, remoteT=Number(existing.updatedAt)||0;
+    if(localT>=remoteT) map.set(item.id,item); // newer (or tied/untimestamped) local copy wins
+    // else: remote copy is genuinely newer, so it stays in the map untouched
+  });
   return Array.from(map.values());
+}
+/* Stamp updatedAt=now on any record that actually changed since the last save, by diffing
+   against the snapshot captured after the previous save/sync. This is what makes the
+   timestamp-aware merge above possible, without having to hunt down every single place in the
+   app that edits stock, products, sales, purchases, etc. */
+function stampChangedRecords(){
+  try{
+    const prev=_lastSavedSnapshot;
+    (db.businesses||[]).forEach((bz,bi)=>{
+      if(!bz)return;
+      const prevBiz=(prev&&Array.isArray(prev.businesses))?prev.businesses[bi]:null;
+      CLOUD_ARRAY_KEYS.forEach(k=>{
+        const arr=bz[k]; if(!Array.isArray(arr))return;
+        const prevArr=(prevBiz&&Array.isArray(prevBiz[k]))?prevBiz[k]:[];
+        const prevMap=new Map();
+        prevArr.forEach(r=>{ if(r&&r.id!=null) prevMap.set(r.id,r); });
+        arr.forEach(rec=>{
+          if(!rec||rec.id==null)return;
+          const old=prevMap.get(rec.id);
+          const curCopy={...rec}; delete curCopy.updatedAt;
+          let changed=true;
+          if(old){ const oldCopy={...old}; delete oldCopy.updatedAt; changed=JSON.stringify(curCopy)!==JSON.stringify(oldCopy); }
+          if(changed) rec.updatedAt=Date.now();
+        });
+      });
+    });
+  }catch(e){ console.error('stampChangedRecords error',e); }
 }
 function mergeStringArrays(localArr,remoteArr){
   return Array.from(new Set([...(Array.isArray(localArr)?localArr:[]),...(Array.isArray(remoteArr)?remoteArr:[])]));
@@ -1545,6 +1589,7 @@ async function cloudPull(){
     pushSafetyBackup('Cloud থেকে Merge করার আগে');
     db=mergeDB(db,row.state);
     localStorage.setItem(KEY,JSON.stringify(db));
+    try{_lastSavedSnapshot=JSON.parse(JSON.stringify(db))}catch(e){}
     setCloudMeta({lastServerAt:row.updated_at,lastSync:new Date().toISOString(),dirty:false});
     try{renderAll()}catch(e){}
     renderCloudStatus();
@@ -1561,6 +1606,7 @@ async function cloudPush(){
       pushSafetyBackup('Cloud-এ Upload করার আগে Merge');
       db=mergeDB(db,row.state);
       localStorage.setItem(KEY,JSON.stringify(db));
+      try{_lastSavedSnapshot=JSON.parse(JSON.stringify(db))}catch(e){}
       try{renderAll()}catch(e){}
     }
     const now=new Date().toISOString();
@@ -1588,7 +1634,16 @@ function scheduleCloudPush(){
   cloudPushTimer=setTimeout(()=>{ if(navigator.onLine&&!cloudSyncBusy) cloudPush(); },1200);
   renderCloudStatus();
 }
-const _v26OriginalSave=save;save=function(){const ok=_v26OriginalSave();if(ok){try{renderAll()}catch(e){console.error('Refresh after save failed',e)}scheduleCloudPush();}return ok};
+const _v26OriginalSave=save;save=function(){
+  try{stampChangedRecords()}catch(e){console.error('stampChangedRecords call failed',e)}
+  const ok=_v26OriginalSave();
+  if(ok){
+    try{renderAll()}catch(e){console.error('Refresh after save failed',e)}
+    scheduleCloudPush();
+    try{_lastSavedSnapshot=JSON.parse(JSON.stringify(db))}catch(e){}
+  }
+  return ok;
+};
 /* Coming back online: if this device has unsynced (dirty) changes, PUSH them (fixes the old bug where offline sales just sat unsynced); otherwise pull-merge any new cloud data. */
 window.addEventListener('online',()=>{
   renderCloudStatus();

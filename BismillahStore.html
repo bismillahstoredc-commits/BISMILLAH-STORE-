@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bismillah Store — Offline Business Manager</title>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
 :root{
   --primary:#6b57d9; --primary2:#8a78e8; --bg:#f7f8fc; --card:#fff;
@@ -54,6 +55,12 @@ table{width:100%;border-collapse:collapse;min-width:650px}th,td{padding:12px;bor
 .pos-search input:focus{border-color:var(--primary)}
 .barcode-box{position:relative}
 .barcode-box span{position:absolute;right:12px;top:12px;color:var(--primary);font-size:13px}
+.barcode-box input{padding-right:46px}
+.barcode-cam-btn{position:absolute;right:6px;top:6px;bottom:6px;width:38px;border-radius:8px;background:var(--primary);color:#fff;font-size:17px;display:flex;align-items:center;justify-content:center;border:0}
+.barcode-cam-btn:active{opacity:.8}
+#cameraScanModal .modal-box{max-width:420px;padding:18px;text-align:center}
+#cameraScanReader{width:100%;border-radius:10px;overflow:hidden;background:#000;min-height:260px}
+#cameraScanStatus{margin-top:10px;color:var(--muted);font-size:13px;min-height:18px}
 .product-results{display:grid;grid-template-columns:1fr;gap:7px;max-height:540px;overflow:auto}.product-result{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}.product-result .product-meta{font-size:12px;line-height:1.55;color:var(--muted)}.pos-items{max-height:390px;overflow:auto;display:flex;flex-direction:column}.pos-item{flex-shrink:0}.pos-bottom-actions .btn{padding:7px 10px;font-size:12px;border-radius:7px}
 .product-result{border:1px solid var(--border);border-radius:12px;padding:13px;background:#fff;text-align:left}
 .product-result:hover{border-color:var(--primary);background:#faf9ff}
@@ -294,7 +301,7 @@ function softRefreshCurrentPage(){
         <div class="barcode-box">
           <input id="posBarcode" placeholder="Barcode Scan / লিখুন" autocomplete="off"
                  onkeydown="posBarcodeKey(event)">
-          <span>▦ SCAN</span>
+          <button type="button" class="barcode-cam-btn" title="ক্যামেরা দিয়ে Scan" onclick="openCameraScan('sales')">📷</button>
         </div>
         <input id="posNameSearch" placeholder="পণ্যের নাম দিয়ে Search" autocomplete="off"
                oninput="renderPOSProducts()">
@@ -627,6 +634,7 @@ function softRefreshCurrentPage(){
 <input type="file" id="restoreInput" accept=".json" style="display:none">
 
 <div class="modal" id="modal"><div class="modal-box"><div class="modal-head"><h2 id="modalTitle">Entry</h2><button class="close" onclick="closeModal()">×</button></div><div id="modalBody"></div></div></div>
+<div class="modal" id="cameraScanModal" style="z-index:200"><div class="modal-box"><div class="modal-head"><h2 style="font-size:17px">📷 ক্যামেরা দিয়ে Barcode Scan</h2><button class="close" onclick="closeCameraScan()">×</button></div><div id="cameraScanReader"></div><div id="cameraScanStatus">ক্যামেরা চালু হচ্ছে...</div><button class="btn secondary" style="margin-top:12px;width:100%" onclick="closeCameraScan()">বন্ধ করুন</button></div></div>
 
 <script>
 // Explicit DOM references for reliable operation in all browsers
@@ -1960,7 +1968,10 @@ window.openPurchaseModalFixed = function(existing){
           <select id="purAccount">${b.accounts.map(a=>`<option value="${esc(a.id)}" ${existing?.paymentAccount===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select>
         </div>
         <div class="field" style="margin-top:10px"><label>🔎 Barcode Scan</label>
-          <input id="purBarcode" autocomplete="off" placeholder="Barcode scan করে Enter চাপুন">
+          <div class="barcode-box">
+            <input id="purBarcode" autocomplete="off" placeholder="Barcode scan করে Enter চাপুন">
+            <button type="button" class="barcode-cam-btn" title="ক্যামেরা দিয়ে Scan" onclick="openCameraScan('purchase')">📷</button>
+          </div>
         </div>
         <div class="field" style="margin-top:10px"><label>🔎 নাম / Barcode Search</label>
           <input id="purNameSearch" autocomplete="off" placeholder="পণ্যের নাম বা Barcode লিখুন..." oninput="renderPurchaseProducts()">
@@ -2430,6 +2441,77 @@ v21EnsureProductReturns();
     }
   });
 })();
+</script>
+<script>
+/* Camera barcode scanner (mobile camera) for Sales / Purchase POS */
+let _cameraScanner=null, _cameraScanMode='sales';
+
+function openCameraScan(mode){
+  _cameraScanMode = mode || 'sales';
+  const modalEl=document.getElementById('cameraScanModal');
+  const statusEl=document.getElementById('cameraScanStatus');
+  const readerEl=document.getElementById('cameraScanReader');
+  if(!modalEl||!statusEl||!readerEl) return;
+  readerEl.innerHTML='';
+  modalEl.classList.add('show');
+  statusEl.textContent='ক্যামেরা চালু হচ্ছে...';
+
+  if(typeof Html5Qrcode==='undefined'){
+    statusEl.textContent='ক্যামেরা স্ক্যানার লোড হয়নি। একবার ইন্টারনেট সংযোগে থেকে অ্যাপটি খুলুন, তারপর অফলাইনেও এটি কাজ করবে।';
+    return;
+  }
+
+  _cameraScanner = new Html5Qrcode('cameraScanReader');
+  Html5Qrcode.getCameras().then(function(devices){
+    if(!devices || !devices.length){
+      statusEl.textContent='কোনো ক্যামেরা খুঁজে পাওয়া যায়নি।';
+      return;
+    }
+    let backCam = devices.find(d=>/back|rear|environment/i.test(d.label||''));
+    let camId = backCam ? backCam.id : devices[devices.length-1].id;
+    _cameraScanner.start(
+      camId,
+      { fps: 10, qrbox: { width: 260, height: 160 } },
+      function(decodedText){
+        if(statusEl) statusEl.textContent='✅ পাওয়া গেছে: '+decodedText;
+        handleBarcodeScanned(decodedText, _cameraScanMode);
+        closeCameraScan();
+      },
+      function(){ /* scan failure per-frame, ignore */ }
+    ).then(function(){
+      statusEl.textContent='বারকোডের দিকে ক্যামেরা ধরুন...';
+    }).catch(function(err){
+      statusEl.textContent='ক্যামেরা চালু করা যায়নি: '+(err && err.message ? err.message : err);
+    });
+  }).catch(function(err){
+    statusEl.textContent='ক্যামেরা Permission প্রয়োজন। ('+(err && err.message ? err.message : err)+')';
+  });
+}
+
+function closeCameraScan(){
+  const modalEl=document.getElementById('cameraScanModal');
+  if(_cameraScanner){
+    _cameraScanner.stop().then(function(){
+      _cameraScanner.clear();
+      _cameraScanner=null;
+    }).catch(function(){ _cameraScanner=null; });
+  }
+  if(modalEl) modalEl.classList.remove('show');
+}
+
+function handleBarcodeScanned(code, mode){
+  code=(code||'').trim();
+  if(!code) return;
+  if(mode==='purchase'){
+    const el=document.getElementById('purBarcode');
+    if(el) el.value=code;
+    if(typeof purchaseBarcodeKey==='function') purchaseBarcodeKey({key:'Enter',preventDefault:function(){}});
+  }else{
+    const el=document.getElementById('posBarcode');
+    if(el) el.value=code;
+    if(typeof posBarcodeKey==='function') posBarcodeKey({key:'Enter',preventDefault:function(){}});
+  }
+}
 </script>
 </body>
 </html>

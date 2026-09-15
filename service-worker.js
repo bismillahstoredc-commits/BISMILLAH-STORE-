@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bismillah-store-v1';
+const CACHE_NAME = 'bismillah-store-v2';
 const APP_SHELL = [
   './BismillahStore.html',
   './manifest.json',

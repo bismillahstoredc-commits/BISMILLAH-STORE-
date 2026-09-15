@@ -16,7 +16,7 @@ body{margin:0;font-family:Arial,"Noto Sans Bengali",sans-serif;background:var(--
 button,input,select,textarea{font:inherit}
 button{cursor:pointer;border:0}
 .app{display:flex;min-height:100vh}
-.sidebar{width:270px;background:#fff;border-right:1px solid var(--border);position:fixed;inset:0 auto 0 0;z-index:10;overflow:auto}
+.sidebar{width:270px;background:var(--sidebarBg,#fff);border-right:1px solid var(--border);position:fixed;inset:0 auto 0 0;z-index:10;overflow:auto}
 .brand{background:linear-gradient(135deg,var(--primary),#8776e6);color:white;padding:22px 20px}
 .brand h1{margin:0;font-size:23px}.brand p{margin:7px 0 0;opacity:.85;font-size:13px}
 .business{margin:14px;background:#faf9ff;border:1px solid #e5e0ff;border-radius:14px;padding:12px;box-shadow:0 2px 7px #332f6508}
@@ -72,7 +72,7 @@ table{width:100%;border-collapse:collapse;min-width:650px}th,td{padding:12px;bor
 .pos-item .qty,.pos-item .price{width:100%;padding:8px;border:1px solid var(--border);border-radius:7px}
 .pos-total{font-size:23px;font-weight:bold;text-align:right;margin-top:14px}
 .pos-pay{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
-@media(max-width:900px){.sales-pos{grid-template-columns:1fr}.pos-invoice{position:static}.product-results{grid-template-columns:1fr}}
+@media(max-width:900px){.sales-pos{grid-template-columns:1fr}.pos-invoice{position:static}.product-results{grid-template-columns:1fr}.purchase-pos-grid{grid-template-columns:1fr!important}}
 @media(max-width:600px){.pos-search,.pos-pay{grid-template-columns:1fr}.pos-item{grid-template-columns:1fr 65px 85px 85px 32px;font-size:12px}}
 
 @media(max-width:1000px){.cards{grid-template-columns:repeat(2,1fr)}.quick{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:repeat(2,1fr)}}
@@ -265,17 +265,17 @@ function softRefreshCurrentPage(){
 <section id="dashboard" class="page active">
   <div class="notice">এই HTML অ্যাপটি সম্পূর্ণ Offline-এ চলে। ডেটা আপনার ব্রাউজারের Local Storage-এ রাখা হচ্ছে। নিয়মিত Backup নিন।</div>
   <div class="grid cards">
-    <div class="card stat c-blue"><div class="stat-ic">🛒</div><div class="label">আজকের বিক্রয়</div><div class="value" id="dSales">৳ 0.00</div><div class="sub">আজ</div></div>
-    <div class="card stat c-orange"><div class="stat-ic">🛍️</div><div class="label">আজকের ক্রয়</div><div class="value" id="dPurchase">৳ 0.00</div><div class="sub">আজ</div></div>
-    <div class="card stat c-red"><div class="stat-ic">🧾</div><div class="label">মোট বাকি (Customer Due)</div><div class="value" id="dDue">৳ 0.00</div><div class="sub">সব কাস্টমারের বাকি</div></div>
-    <div class="card stat c-green"><div class="stat-ic">📦</div><div class="label">বর্তমান Stock Value</div><div class="value" id="dStock">৳ 0.00</div><div class="sub">Purchase মূল্য</div></div>
+    <div class="card stat c-blue" id="statCardSales"><div class="stat-ic">🛒</div><div class="label">আজকের বিক্রয়</div><div class="value" id="dSales">৳ 0.00</div><div class="sub">আজ</div></div>
+    <div class="card stat c-orange" id="statCardPurchase"><div class="stat-ic">🛍️</div><div class="label">আজকের ক্রয়</div><div class="value" id="dPurchase">৳ 0.00</div><div class="sub">আজ</div></div>
+    <div class="card stat c-red" id="statCardDue"><div class="stat-ic">🧾</div><div class="label">মোট বাকি (Customer Due)</div><div class="value" id="dDue">৳ 0.00</div><div class="sub">সব কাস্টমারের বাকি</div></div>
+    <div class="card stat c-green" id="statCardStock"><div class="stat-ic">📦</div><div class="label">বর্তমান Stock Value</div><div class="value" id="dStock">৳ 0.00</div><div class="sub">Purchase মূল্য</div></div>
   </div>
   <div class="section-head"><h2>দ্রুত কাজ</h2></div>
   <div class="grid quick">
-    <button class="q-purple" onclick="startSalePOS()"><div class="q-ic">🧾</div><b>নতুন বিক্রয়</b><span>নতুন Invoice তৈরি করুন</span></button>
-    <button class="q-blue" onclick="startPurchasePOS()"><div class="q-ic">🛒</div><b>নতুন ক্রয়</b><span>Purchase Entry করুন</span></button>
-    <button class="q-green" onclick="showPage('products')"><div class="q-ic">📦</div><b>পণ্য যোগ করুন</b><span>Product ও Stock পরিচালনা</span></button>
-    <button class="q-orange" onclick="showPage('reports')"><div class="q-ic">📊</div><b>রিপোর্ট দেখুন</b><span>Sales, Purchase, Profit, Stock</span></button>
+    <button class="q-purple" id="quickBtnSale" onclick="startSalePOS()"><div class="q-ic">🧾</div><b>নতুন বিক্রয়</b><span>নতুন Invoice তৈরি করুন</span></button>
+    <button class="q-blue" id="quickBtnPurchase" onclick="startPurchasePOS()"><div class="q-ic">🛒</div><b>নতুন ক্রয়</b><span>Purchase Entry করুন</span></button>
+    <button class="q-green" id="quickBtnProduct" onclick="showPage('products')"><div class="q-ic">📦</div><b>পণ্য যোগ করুন</b><span>Product ও Stock পরিচালনা</span></button>
+    <button class="q-orange" id="quickBtnReport" onclick="showPage('reports')"><div class="q-ic">📊</div><b>রিপোর্ট দেখুন</b><span>Sales, Purchase, Profit, Stock</span></button>
   </div>
   <div class="section-head"><h2>সাম্প্রতিক Invoice</h2></div>
   <div class="table-wrap"><table><thead><tr><th>Invoice</th><th>ধরন</th><th>Party</th><th>তারিখ</th><th>মোট</th><th>অ্যাকশন</th></tr></thead><tbody id="recentTable"></tbody></table></div>
@@ -549,25 +549,10 @@ function softRefreshCurrentPage(){
   <div id="cloudInfo" style="margin-top:14px"></div>
   <div class="notice" style="margin-top:14px">প্রথমবার Cloud চালু করার আগে একবার Backup ডাউনলোড করে রাখুন। Free Supabase Project দীর্ঘদিন ব্যবহার না হলে Pause হতে পারে।</div>
  </div>
- <div class="section-head" style="margin-top:22px"><h2>🛟 Safety Backup History (স্থানীয়)</h2><div class="actions"><button class="btn secondary" onclick="renderSafetyBackups()">Refresh List</button><button class="btn danger" onclick="clearAllSafetyBackups()">🗑️ পুরনো Backup মুছে জায়গা খালি করুন</button></div></div>
+ <div class="section-head" style="margin-top:22px"><h2>🛟 Safety Backup History (স্থানীয়)</h2><div class="actions"><button class="btn secondary" onclick="renderSafetyBackups()">Refresh List</button></div></div>
  <div class="form-card">
-  <div class="notice">Sync/Merge করার আগে প্রতিবার এখানে স্বয়ংক্রিয়ভাবে একটি Backup Point রাখা হয় (সর্বশেষ ৩টি)। কোনো কারণে ডেটা ঠিক মনে না হলে এখান থেকে আগের যেকোনো Point-এ ফিরে যেতে পারবেন।</div>
-  <div class="card stat" style="margin-top:10px"><div class="label">আনুমানিক Storage ব্যবহার</div><div class="value" id="storageUsageValue">—</div><div class="sub">Browser সাধারণত ৫-১০ MB পর্যন্ত জায়গা দেয়</div></div>
+  <div class="notice">Sync/Merge করার আগে প্রতিবার এখানে স্বয়ংক্রিয়ভাবে একটি Backup Point রাখা হয় (সর্বশেষ ১০টি)। কোনো কারণে ডেটা ঠিক মনে না হলে এখান থেকে আগের যেকোনো Point-এ ফিরে যেতে পারবেন।</div>
   <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>সময়</th><th>কারণ</th><th>Action</th></tr></thead><tbody id="safetyBackupTable"></tbody></table></div>
- </div>
- <div class="section-head" style="margin-top:22px"><h2>🗄️ পুরনো Invoice Archive (Cold Storage)</h2></div>
- <div class="form-card">
-  <div class="notice">দিনে অনেক (২০০-৫০০+) Invoice হলে Browser Storage দ্রুত ভরে যায়। সমাধান: পুরনো, <b>সম্পূর্ণ পরিশোধিত</b> ও <b>Cloud-এ Sync-নিশ্চিত</b> Invoice নিরাপদে একটা আলাদা বড় জায়গায় (IndexedDB) সরিয়ে রাখা — মুছে ফেলা না। Cash/Stock/Trial Balance/Balance Sheet — সব হিসাব অপরিবর্তিত থাকে (Archive করার আগে ও পরে স্বয়ংক্রিয়ভাবে মিলিয়ে দেখা হয়; না মিললে কিছুই সরানো হয় না)।</div>
-  <div class="card stat" style="margin-top:10px"><div class="label">Archive করা Invoice</div><div class="value" id="archiveStatusValue">—</div></div>
-  <div class="form-grid" style="margin-top:14px">
-   <div class="field"><label>কত দিনের বেশি পুরনো Archive হবে</label><input id="archiveDays" type="number" min="14" value="60"></div>
-  </div>
-  <div class="actions" style="margin-top:10px"><button class="btn" onclick="archiveOldData()">🗄️ এখনই Archive করুন</button></div>
-  <div class="notice" style="margin-top:14px">⚠️ শর্ত: শেষ সফল Cloud Sync-এর আগে তৈরি/সম্পাদিত, বাকি নেই এমন এবং Cancelled নয় — এই Invoice-গুলোই Archive হবে। বাকি থাকা বা Cancelled Invoice আজীবন Local-এই থাকবে।</div>
-  <div class="section-head" style="margin-top:18px"><h2 style="font-size:15px">🔍 Archive করা পুরনো Invoice খুঁজুন</h2></div>
-  <div class="form-grid"><div class="field"><label>Invoice নম্বর</label><input id="archInvoiceSearch" placeholder="যেমন INV-00123"></div></div>
-  <div class="actions" style="margin-top:8px"><button class="btn secondary" onclick="findArchivedInvoice()">খুঁজুন</button></div>
-  <div id="archInvoiceResult" style="margin-top:10px"></div>
  </div>
 </section>
 
@@ -607,6 +592,20 @@ function softRefreshCurrentPage(){
    <div class="field"><label>Invoice Design</label><select id="sInvoiceDesign"><option value="classic">Design 1 — Classic</option><option value="modern">Design 2 — Modern</option><option value="minimal">Design 3 — Minimal</option><option value="boxed">Design 4 — Boxed</option><option value="elegant">Design 5 — Elegant</option></select></div>
    <div class="field"><label>Theme Color</label><input id="sThemeColor" type="color" value="#6b57d9" style="height:44px;padding:4px"></div>
    <div class="field"><label>Theme Preset</label><select id="sThemePreset" onchange="applyThemePreset(this.value)"><option value="">নিজের Color</option><option value="#6b57d9">Purple</option><option value="#2563eb">Blue</option><option value="#059669">Green</option><option value="#dc2626">Red</option><option value="#d97706">Orange</option><option value="#7c3aed">Violet</option><option value="#0f766e">Teal</option><option value="#111827">Black</option></select></div>
+   <div class="field"><label>Sidebar / মেনু ব্যাকগ্রাউন্ড কালার</label><input id="sSidebarColor" type="color" value="#ffffff" style="height:44px;padding:4px"></div>
+  </div>
+  <h3 style="margin-top:22px">🎨 ড্যাশবোর্ড বক্স কালার (নিজের মতো এডিট করুন)</h3>
+  <div class="form-grid" style="grid-template-columns:repeat(4,1fr);gap:14px">
+   <div class="field"><label>🛒 আজকের বিক্রয়</label><input id="sBoxStat1" type="color" value="#2563eb" style="height:44px;padding:4px"></div>
+   <div class="field"><label>🛍️ আজকের ক্রয়</label><input id="sBoxStat2" type="color" value="#e5892b" style="height:44px;padding:4px"></div>
+   <div class="field"><label>🧾 মোট বাকি</label><input id="sBoxStat3" type="color" value="#df5360" style="height:44px;padding:4px"></div>
+   <div class="field"><label>📦 Stock Value</label><input id="sBoxStat4" type="color" value="#20a56a" style="height:44px;padding:4px"></div>
+   <div class="field"><label>🧾 নতুন বিক্রয় বাটন</label><input id="sBoxQ1" type="color" value="#6b57d9" style="height:44px;padding:4px"></div>
+   <div class="field"><label>🛒 নতুন ক্রয় বাটন</label><input id="sBoxQ2" type="color" value="#2563eb" style="height:44px;padding:4px"></div>
+   <div class="field"><label>📦 পণ্য যোগ বাটন</label><input id="sBoxQ3" type="color" value="#20a56a" style="height:44px;padding:4px"></div>
+   <div class="field"><label>📊 রিপোর্ট বাটন</label><input id="sBoxQ4" type="color" value="#e5892b" style="height:44px;padding:4px"></div>
+  </div>
+  <div class="actions" style="margin-top:12px"><button class="btn secondary" onclick="resetDashboardColors()">↺ Default Color-এ ফিরে যান</button></div>
   </div>
   <div style="margin-top:12px"><img id="logoPreview" style="max-width:120px;max-height:70px;border:1px solid var(--border);border-radius:8px;display:none"></div>
   <div class="field" style="margin-top:12px"><label>Invoice Footer / Terms</label><textarea id="sFooter"></textarea></div>
@@ -649,7 +648,7 @@ function softRefreshCurrentPage(){
 <input type="file" id="restoreInput" accept=".json" style="display:none">
 
 <div class="modal" id="modal"><div class="modal-box"><div class="modal-head"><h2 id="modalTitle">Entry</h2><button class="close" onclick="closeModal()">×</button></div><div id="modalBody"></div></div></div>
-<div class="modal" id="cameraScanModal" style="z-index:200"><div class="modal-box"><div class="modal-head"><h2 style="font-size:17px">📷 ক্যামেরা দিয়ে Barcode Scan (একাধিক পণ্য)</h2><button class="close" onclick="closeCameraScan()">×</button></div><div id="cameraScanReader"></div><div id="cameraScanStatus">ক্যামেরা চালু হচ্ছে...</div><button class="btn secondary" style="margin-top:12px;width:100%" onclick="closeCameraScan()">✅ স্ক্যান শেষ, বন্ধ করুন</button></div></div>
+<div class="modal" id="cameraScanModal" style="z-index:200"><div class="modal-box"><div class="modal-head"><h2 style="font-size:17px">📷 ক্যামেরা দিয়ে Barcode Scan</h2><button class="close" onclick="closeCameraScan()">×</button></div><div id="cameraScanReader"></div><div id="cameraScanStatus">ক্যামেরা চালু হচ্ছে...</div><button class="btn secondary" style="margin-top:12px;width:100%" onclick="closeCameraScan()">বন্ধ করুন</button></div></div>
 
 <script>
 // Explicit DOM references for reliable operation in all browsers
@@ -689,10 +688,6 @@ try{
     localStorage.setItem(RESET_MARK,'done');
   }
 }catch(e){ console.error('Clean start error',e); }
-// Multi-device sync fix: keep a snapshot of the last-saved state so we can tell exactly
-// which records changed on THIS device since the last save/sync (see stampChangedRecords below).
-let _lastSavedSnapshot=null;
-try{ _lastSavedSnapshot=JSON.parse(JSON.stringify(db)); }catch(e){ _lastSavedSnapshot=null; }
 function save(){
   try{
     localStorage.setItem(KEY,JSON.stringify(db));
@@ -930,6 +925,11 @@ function renderUsers(){usersTable.innerHTML=biz().users.map(x=>`<tr><td>${esc(x.
 function renderSettings(){
  let b=biz();sName.value=b.name;sPhone.value=b.phone;sEmail.value=b.email;sAddress.value=b.address;sCurrency.value=b.currency;sPrefix.value=b.prefix;sFooter.value=b.footer;
  if(sPaper)sPaper.value=b.paper||'80mm'; if(sPrinter)sPrinter.value=b.printer||''; if(sPrintLogo)sPrintLogo.value=b.printLogo||'yes'; if(sInvoiceDesign)sInvoiceDesign.value=b.invoiceDesign||'classic'; if(sThemeColor)sThemeColor.value=b.themeColor||'#6b57d9';
+ {let dc=b.dashboardColors||{};
+  if(sSidebarColor)sSidebarColor.value=b.sidebarColor||'#ffffff';
+  if(sBoxStat1)sBoxStat1.value=dc.stat1||'#2563eb'; if(sBoxStat2)sBoxStat2.value=dc.stat2||'#e5892b'; if(sBoxStat3)sBoxStat3.value=dc.stat3||'#df5360'; if(sBoxStat4)sBoxStat4.value=dc.stat4||'#20a56a';
+  if(sBoxQ1)sBoxQ1.value=dc.q1||'#6b57d9'; if(sBoxQ2)sBoxQ2.value=dc.q2||'#2563eb'; if(sBoxQ3)sBoxQ3.value=dc.q3||'#20a56a'; if(sBoxQ4)sBoxQ4.value=dc.q4||'#e5892b';
+ }
  if(b.logo){logoPreview.src=b.logo;logoPreview.style.display='block'}else{logoPreview.style.display='none'}
  businessTable.innerHTML=db.businesses.map((x,i)=>`<tr><td>${esc(x.name)}</td><td>${esc(x.phone)}</td><td>${x.products.length}</td><td>${x.sales.length}</td><td><button class="btn secondary" onclick="selectBusiness(${i})">Open</button> <button class="btn danger" onclick="deleteBusinessAccount(${i})" ${db.businesses.length<=1?'disabled':''}>Delete</button></td></tr>`).join('');
 }
@@ -998,7 +998,7 @@ function currentPermissions(){let u=currentUser;if(!u)return [];if(!Array.isArra
 function can(page){let ps=currentPermissions();return ps.includes('*')||ps.includes(page)}
 function requirePerm(page){if(!can(page)){alert('এই User-এর এই কাজের Permission নেই।');return false}return true}
 function accountById(idv){return biz().accounts.find(a=>String(a.id)===String(idv))||biz().accounts[0]}
-function accountBalance(aid){let b=biz(),a=accountById(aid),bal=+(a?.opening||0)+Number((b.archivedCash&&a&&b.archivedCash[a.id])||0);b.cash.filter(x=>String(x.accountId||'cash')===String(a.id)).forEach(x=>bal+=(x.type==='In'?1:-1)*Number(x.amount||0));b.sales.filter(x=>String(x.paymentAccount||'cash')===String(a.id)).forEach(x=>bal+=Number(x.paid!=null?x.paid:x.total||0));b.purchases.filter(x=>String(x.paymentAccount||'cash')===String(a.id)).forEach(x=>bal-=Number(x.paid!=null?x.paid:x.total||0));return bal}
+function accountBalance(aid){let b=biz(),a=accountById(aid),bal=+(a?.opening||0);b.cash.filter(x=>String(x.accountId||'cash')===String(a.id)).forEach(x=>bal+=(x.type==='In'?1:-1)*Number(x.amount||0));b.sales.filter(x=>String(x.paymentAccount||'cash')===String(a.id)).forEach(x=>bal+=Number(x.paid!=null?x.paid:x.total||0));b.purchases.filter(x=>String(x.paymentAccount||'cash')===String(a.id)).forEach(x=>bal-=Number(x.paid!=null?x.paid:x.total||0));return bal}
 function renderAccounts(){let b=biz();if(document.getElementById('posAccount'))document.getElementById('posAccount').innerHTML=b.accounts.map(a=>`<option value=\"${a.id}\">${esc(a.name)}</option>`).join('');if(!accountsTable)return;accountsTable.innerHTML=b.accounts.map(a=>{let ins=b.cash.filter(x=>String(x.accountId||'cash')===String(a.id)&&x.type==='In').reduce((n,x)=>n+Number(x.amount||0),0)+b.sales.filter(x=>String(x.paymentAccount||'cash')===String(a.id)).reduce((n,x)=>n+Number(x.paid!=null?x.paid:x.total||0),0);let outs=b.cash.filter(x=>String(x.accountId||'cash')===String(a.id)&&x.type==='Out').reduce((n,x)=>n+Number(x.amount||0),0)+b.purchases.filter(x=>String(x.paymentAccount||'cash')===String(a.id)).reduce((n,x)=>n+Number(x.paid!=null?x.paid:x.total||0),0);return `<tr><td><b>${esc(a.name)}</b></td><td>${esc(a.type||'Other')}</td><td>${money(a.opening)}</td><td>${money(ins)}</td><td>${money(outs)}</td><td><b>${money(accountBalance(a.id))}</b></td></tr>`}).join('')}
 function openAccount(aid){if(!requirePerm('coa')&&!requirePerm('cash'))return;let a=aid?biz().accounts.find(x=>String(x.id)===String(aid)):{id:0,name:'',type:'Cash',category:'Asset',opening:0};modalTitle.textContent=aid?'Account Edit':'নতুন Account';modalBody.innerHTML=`<div class="form-grid"><div class="field"><label>Account Name</label><input id="aName" value="${esc(a.name)}"></div><div class="field"><label>Account Type</label><select id="aType"><option value="Cash" ${a.type==='Cash'?'selected':''}>Cash</option><option value="Bank" ${a.type==='Bank'?'selected':''}>Bank</option><option value="Mobile Wallet" ${a.type==='Mobile Wallet'?'selected':''}>Mobile Wallet</option><option value="Other" ${a.type==='Other'?'selected':''}>Other</option></select></div><div class="field"><label>Accounting Category</label><select id="aCategory"><option value="Asset" ${(a.category||'Asset')==='Asset'?'selected':''}>Asset</option><option value="Liability" ${a.category==='Liability'?'selected':''}>Liability</option><option value="Equity" ${a.category==='Equity'?'selected':''}>Equity</option><option value="Revenue" ${a.category==='Revenue'?'selected':''}>Revenue</option><option value="Expense" ${a.category==='Expense'?'selected':''}>Expense</option><option value="COGS" ${a.category==='COGS'?'selected':''}>Cost of Sales</option></select></div><div class="field"><label>Opening Balance</label><input id="aOpening" type="number" value="${a.opening||0}"></div></div><div style="margin-top:18px"><button class="btn" onclick="saveAccount(${a.id?`'${a.id}'`:'0'})">Save</button></div>`;modal.classList.add('show')}
 function saveAccount(aid){if(!requirePerm('coa')&&!requirePerm('cash'))return;let b=biz(),name=aName.value.trim();if(!name){alert('Account Name দিন।');return}if(aid&&aid!=='0'){let a=b.accounts.find(x=>String(x.id)===String(aid));if(a)Object.assign(a,{name,type:aType.value,category:aCategory.value,opening:+aOpening.value||0})}else b.accounts.push({id:'acc_'+id(),name,type:aType.value,category:aCategory.value,opening:+aOpening.value||0});closeModal();save()}
@@ -1051,48 +1051,15 @@ function openProduct(pid){if(!requirePerm('products'))return;
  <div style="margin-top:18px"><button class="btn" onclick="saveProduct(${p.id||0})">Save</button></div>`;
  modal.classList.add('show');
 }
-/* Storage-quota fix: phone camera photos are often 3-8MB each; storing them raw in localStorage
-   (which browsers usually cap around 5-10MB TOTAL per site) fills it up after just a few products.
-   This resizes+re-encodes any uploaded image to a small JPEG before it's ever stored. */
-function compressImageFile(file,maxDim,quality){
- return new Promise((resolve,reject)=>{
-  try{
-   const reader=new FileReader();
-   reader.onerror=()=>reject(reader.error||new Error('File read failed'));
-   reader.onload=function(e){
-    const img=new Image();
-    img.onerror=()=>reject(new Error('Image decode failed'));
-    img.onload=function(){
-     try{
-      let w=img.width,h=img.height;
-      const scale=Math.min(1,(maxDim||700)/Math.max(w,h));
-      w=Math.max(1,Math.round(w*scale)); h=Math.max(1,Math.round(h*scale));
-      const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
-      const ctx=canvas.getContext('2d'); ctx.drawImage(img,0,0,w,h);
-      resolve(canvas.toDataURL('image/jpeg',quality||0.6));
-     }catch(err){ reject(err); }
-    };
-    img.src=e.target.result;
-   };
-   reader.readAsDataURL(file);
-  }catch(err){ reject(err); }
- });
-}
 function previewProductImage(el){
  const f=el.files&&el.files[0];if(!f)return;
- compressImageFile(f,700,0.6).then(data=>{
+ const reader=new FileReader();
+ reader.onload=function(e){
+  const data=e.target.result;
   const hidden=document.getElementById('fImageData');if(hidden)hidden.value=data;
   const img=document.getElementById('fImagePreview');if(img){img.src=data;img.style.display='block'}
- }).catch(err=>{
-  console.error('Image compress failed, falling back to raw file',err);
-  const reader=new FileReader();
-  reader.onload=function(e){
-   const data=e.target.result;
-   const hidden=document.getElementById('fImageData');if(hidden)hidden.value=data;
-   const img=document.getElementById('fImagePreview');if(img){img.src=data;img.style.display='block'}
-  };
-  reader.readAsDataURL(f);
- });
+ };
+ reader.readAsDataURL(f);
 }
 function saveProduct(pid){
  let b=biz(),o={id:pid||id(),barcode:fBarcode.value,name:fName.value,category:fCat.value,unit:fUnit.value||'pcs',buy:+fBuy.value||0,sale:+fSale.value||0,wholesalePrice:+fWholesale.value||(+fSale.value||0),minWholesaleQty:+fMinWholesaleQty.value||0,stock:+fStock.value||0,image:(document.getElementById('fImageData')?.value)||''};
@@ -1185,12 +1152,7 @@ function saveOpening(){
  let n=Math.abs(+oBalance.value||0); p.balance=oType.value==='due'?n:-n; closeModal();save();alert('Opening Balance Save হয়েছে।');
 }
 function previewLogo(input){
- let f=input.files[0]; if(!f)return;
- compressImageFile(f,400,0.7).then(data=>{ biz().logo=data; logoPreview.src=data; logoPreview.style.display='block'; })
- .catch(err=>{
-  console.error('Logo compress failed, falling back to raw file',err);
-  let r=new FileReader(); r.onload=()=>{biz().logo=r.result;logoPreview.src=r.result;logoPreview.style.display='block'}; r.readAsDataURL(f);
- });
+ let f=input.files[0]; if(!f)return; let r=new FileReader(); r.onload=()=>{biz().logo=r.result;logoPreview.src=r.result;logoPreview.style.display='block'}; r.readAsDataURL(f);
 }
 
 
@@ -1490,41 +1452,14 @@ function pushSafetyBackup(reason){
   try{
     let arr=listSafetyBackups();
     arr.unshift({at:new Date().toISOString(),reason:reason||'sync',data:JSON.parse(JSON.stringify(db))});
-    // Storage-quota fix: each backup duplicates the ENTIRE database (product photos, logo, everything).
-    // Keeping 10 full copies was the main reason 'setItem quota exceeded' errors were happening.
-    // 3 recent copies is still enough to recover from a bad sync, but far lighter on storage.
-    arr=arr.slice(0,3);
+    arr=arr.slice(0,10);
     localStorage.setItem(SAFETY_BACKUP_KEY,JSON.stringify(arr));
-  }catch(e){
-    console.error('Safety backup failed',e);
-    // If even the backup itself can't be written (storage already full), don't let that block
-    // the actual save the user is trying to do — just skip taking a backup this time.
-  }
-}
-function clearAllSafetyBackups(){
-  if(!confirm('সব পুরনো Safety Backup মুছে ফেলবেন? এতে জায়গা খালি হবে, কিন্তু আগের কোনো Backup Point-এ আর ফেরা যাবে না। (আপনার আসল Product/Sales/Purchase ডেটা মুছবে না, শুধু Backup History মুছবে।)'))return;
-  try{
-    localStorage.removeItem(SAFETY_BACKUP_KEY);
-    renderSafetyBackups();
-    renderStorageUsage();
-    alert('✅ পুরনো Backup মুছে ফেলা হয়েছে। এখন আবার Save/Sync চেষ্টা করুন।');
-  }catch(e){ alert('Backup মুছতে সমস্যা হয়েছে: '+(e.message||e)); }
-}
-function renderStorageUsage(){
-  const el=document.getElementById('storageUsageValue'); if(!el)return;
-  try{
-    let bytes=0;
-    for(const k in localStorage){ if(Object.prototype.hasOwnProperty.call(localStorage,k)) bytes+=(localStorage[k]||'').length+k.length; }
-    const mb=bytes/1024/1024;
-    el.textContent=mb.toFixed(2)+' MB';
-  }catch(e){ el.textContent='—'; }
+  }catch(e){console.error('Safety backup failed',e)}
 }
 function renderSafetyBackups(){
   const tb=document.getElementById('safetyBackupTable');if(!tb)return;
   const arr=listSafetyBackups();
   tb.innerHTML=arr.map((b,i)=>`<tr><td>${new Date(b.at).toLocaleString()}</td><td>${esc(b.reason)}</td><td><button class="btn secondary" onclick="restoreSafetyBackup(${i})">এই Point-এ ফিরুন</button></td></tr>`).join('')||'<tr><td colspan="3" class="empty">এখনো কোনো Safety Backup তৈরি হয়নি</td></tr>';
-  renderStorageUsage();
-  renderArchiveStatus();
 }
 function restoreSafetyBackup(i){
   const arr=listSafetyBackups(), b=arr[i];
@@ -1538,53 +1473,13 @@ function restoreSafetyBackup(i){
   alert('✅ Backup থেকে ডেটা ফিরিয়ে আনা হয়েছে।');
 }
 
-/* ===== Non-destructive Merge: union by id, never deletes local-only or remote-only records =====
-   Fix (report/stock mismatch across devices): on an id-collision we used to ALWAYS keep the
-   local copy, even if the remote copy was actually the newer edit (e.g. a purchase/stock update
-   made on the other device). That silently discarded newer changes and caused Stock Value /
-   reports to differ between devices. Now we compare each record's updatedAt timestamp and keep
-   whichever side is actually newer; only fall back to "keep local" when there's a tie or neither
-   side has a timestamp yet (older data saved before this fix), so old behavior is preserved there. */
+/* ===== Non-destructive Merge: union by id, never deletes local-only or remote-only records ===== */
 function mergeArraysById(localArr,remoteArr){
   localArr=Array.isArray(localArr)?localArr:[]; remoteArr=Array.isArray(remoteArr)?remoteArr:[];
   const map=new Map();
   remoteArr.forEach(item=>{ if(item&&item.id!=null) map.set(item.id,item); });
-  localArr.forEach(item=>{
-    if(!item||item.id==null)return;
-    const existing=map.get(item.id);
-    if(!existing){ map.set(item.id,item); return; } // local-only record: nothing is ever dropped
-    const localT=Number(item.updatedAt)||0, remoteT=Number(existing.updatedAt)||0;
-    if(localT>=remoteT) map.set(item.id,item); // newer (or tied/untimestamped) local copy wins
-    // else: remote copy is genuinely newer, so it stays in the map untouched
-  });
+  localArr.forEach(item=>{ if(item&&item.id!=null) map.set(item.id,item); }); // local wins only on exact id-collision; nothing is ever dropped
   return Array.from(map.values());
-}
-/* Stamp updatedAt=now on any record that actually changed since the last save, by diffing
-   against the snapshot captured after the previous save/sync. This is what makes the
-   timestamp-aware merge above possible, without having to hunt down every single place in the
-   app that edits stock, products, sales, purchases, etc. */
-function stampChangedRecords(){
-  try{
-    const prev=_lastSavedSnapshot;
-    (db.businesses||[]).forEach((bz,bi)=>{
-      if(!bz)return;
-      const prevBiz=(prev&&Array.isArray(prev.businesses))?prev.businesses[bi]:null;
-      CLOUD_ARRAY_KEYS.forEach(k=>{
-        const arr=bz[k]; if(!Array.isArray(arr))return;
-        const prevArr=(prevBiz&&Array.isArray(prevBiz[k]))?prevBiz[k]:[];
-        const prevMap=new Map();
-        prevArr.forEach(r=>{ if(r&&r.id!=null) prevMap.set(r.id,r); });
-        arr.forEach(rec=>{
-          if(!rec||rec.id==null)return;
-          const old=prevMap.get(rec.id);
-          const curCopy={...rec}; delete curCopy.updatedAt;
-          let changed=true;
-          if(old){ const oldCopy={...old}; delete oldCopy.updatedAt; changed=JSON.stringify(curCopy)!==JSON.stringify(oldCopy); }
-          if(changed) rec.updatedAt=Date.now();
-        });
-      });
-    });
-  }catch(e){ console.error('stampChangedRecords error',e); }
 }
 function mergeStringArrays(localArr,remoteArr){
   return Array.from(new Set([...(Array.isArray(localArr)?localArr:[]),...(Array.isArray(remoteArr)?remoteArr:[])]));
@@ -1669,7 +1564,6 @@ async function cloudPull(){
     pushSafetyBackup('Cloud থেকে Merge করার আগে');
     db=mergeDB(db,row.state);
     localStorage.setItem(KEY,JSON.stringify(db));
-    try{_lastSavedSnapshot=JSON.parse(JSON.stringify(db))}catch(e){}
     setCloudMeta({lastServerAt:row.updated_at,lastSync:new Date().toISOString(),dirty:false});
     try{renderAll()}catch(e){}
     renderCloudStatus();
@@ -1686,7 +1580,6 @@ async function cloudPush(){
       pushSafetyBackup('Cloud-এ Upload করার আগে Merge');
       db=mergeDB(db,row.state);
       localStorage.setItem(KEY,JSON.stringify(db));
-      try{_lastSavedSnapshot=JSON.parse(JSON.stringify(db))}catch(e){}
       try{renderAll()}catch(e){}
     }
     const now=new Date().toISOString();
@@ -1714,136 +1607,7 @@ function scheduleCloudPush(){
   cloudPushTimer=setTimeout(()=>{ if(navigator.onLine&&!cloudSyncBusy) cloudPush(); },1200);
   renderCloudStatus();
 }
-/* ===== Cold Storage (IndexedDB) Archive System =====
-   Goal: keep localStorage small forever (safe for 200-500+ invoices/day) without ever changing
-   any current balance/report total. Old, fully-settled, cloud-confirmed sale/purchase invoices are
-   moved out of the live arrays into IndexedDB (large capacity), and their net accounting effect is
-   folded into per-business "archivedTrial" (for Trial Balance/Balance Sheet, via v13Entries) and
-   "archivedCash" (for accountBalance) rollups — so those reports stay instant and exact.
-   Safety: before committing, we recompute every account's balance and abort+rollback the WHOLE
-   operation if anything doesn't match to the paisa, instead of risking silently-wrong figures. */
-const COLD_DB_NAME='bismillah_cold_v1';
-function openColdDB(){
-  return new Promise((resolve,reject)=>{
-    if(!window.indexedDB){reject(new Error('এই ব্রাউজারে IndexedDB সাপোর্ট নেই।'));return}
-    const req=indexedDB.open(COLD_DB_NAME,1);
-    req.onupgradeneeded=function(e){
-      const d=e.target.result;
-      if(!d.objectStoreNames.contains('records')){
-        const s=d.createObjectStore('records',{keyPath:'_ck'});
-        s.createIndex('bizKey_type','bizKey_type',{unique:false});
-      }
-    };
-    req.onsuccess=e=>resolve(e.target.result);
-    req.onerror=e=>reject(e.target.error||new Error('IndexedDB open failed'));
-  });
-}
-function coldPutMany(bizKey,type,records){
-  return openColdDB().then(d=>new Promise((resolve,reject)=>{
-    const tx=d.transaction('records','readwrite'), store=tx.objectStore('records');
-    records.forEach(r=>store.put({_ck:bizKey+'::'+type+'::'+r.id,bizKey_type:bizKey+'::'+type,invoice:r.invoice||'',data:r}));
-    tx.oncomplete=()=>resolve(true);
-    tx.onerror=()=>reject(tx.error);
-  }));
-}
-function coldGetAll(bizKey,type){
-  return openColdDB().then(d=>new Promise((resolve,reject)=>{
-    const tx=d.transaction('records','readonly'), idx=tx.objectStore('records').index('bizKey_type');
-    const req=idx.getAll(bizKey+'::'+type);
-    req.onsuccess=()=>resolve((req.result||[]).map(r=>r.data));
-    req.onerror=()=>reject(req.error);
-  })).catch(()=>[]);
-}
-function coldCount(bizKey){
-  return Promise.all([coldGetAll(bizKey,'sales'),coldGetAll(bizKey,'purchases')]).then(([s,p])=>({sales:s.length,purchases:p.length}));
-}
-async function findArchivedInvoice(){
-  const bizKey=biz().bizKey; if(!bizKey){alert('এই Business-এর জন্য Archive সাপোর্ট নেই।');return}
-  const q=(document.getElementById('archInvoiceSearch')?.value||'').trim();
-  const out=document.getElementById('archInvoiceResult'); if(!out)return;
-  if(!q){out.innerHTML='<div class="empty">Invoice নম্বর লিখুন।</div>';return}
-  out.innerHTML='খোঁজা হচ্ছে...';
-  const [sales,purchases]=await Promise.all([coldGetAll(bizKey,'sales'),coldGetAll(bizKey,'purchases')]);
-  const hit=[...sales.map(x=>({...x,_type:'বিক্রয়'})),...purchases.map(x=>({...x,_type:'ক্রয়'}))].find(x=>String(x.invoice||'').toLowerCase()===q.toLowerCase());
-  if(!hit){out.innerHTML='<div class="empty">Archive-এ এই নম্বরের Invoice পাওয়া যায়নি (অথবা এখনো Archive হয়নি)।</div>';return}
-  out.innerHTML=`<div class="notice"><b>${esc(hit._type)} Invoice ${esc(hit.invoice)}</b> — তারিখ: ${esc(hit.date)}<br>Party: ${esc(hit.party||'')}<br>মোট: ${money(hit.total||0)}<br><br>${(hit.items||[]).map(i=>`${esc(i.name||('Product #'+i.productId))} × ${i.qty} @ ${money(i.price||i.cost||0)}`).join('<br>')||'—'}</div>`;
-}
-function archiveEligibleCutoff(days){const d=new Date();d.setDate(d.getDate()-(Number(days)||60));return d.toISOString().slice(0,10)}
-async function renderArchiveStatus(){
-  const el=document.getElementById('archiveStatusValue'); if(!el)return;
-  const bizKey=biz().bizKey; if(!bizKey){el.textContent='—';return}
-  try{const c=await coldCount(bizKey);el.textContent=`${c.sales+c.purchases} টি Invoice Archive করা আছে (${c.sales} বিক্রয়, ${c.purchases} ক্রয়)`;}catch(e){el.textContent='—'}
-}
-async function archiveOldData(){
-  const bi=db.currentBusiness, b=db.businesses[bi];
-  if(!b.bizKey){alert('এই Business Account-এ Archive সাপোর্ট চালু নেই। অ্যাপ একবার Reload দিয়ে আবার চেষ্টা করুন।');return}
-  const m=cloudMeta();
-  if(!m.lastSync){alert('এখনো কোনো সফল Cloud Sync হয়নি। প্রথমে Cloud Sync (☁️ Sync Now) সম্পন্ন করুন, তারপর Archive করুন — নাহলে Sync না-হওয়া ডেটা হারানোর ঝুঁকি থাকে।');return}
-  const days=Number(document.getElementById('archiveDays')?.value||60)||60;
-  const syncedAt=Date.parse(m.lastSync);
-  const cutoff=archiveEligibleCutoff(days);
-  const eligibleSales=(b.sales||[]).filter(x=>x.status!=='Cancelled'&&Number(x.due||0)<=0&&x.date<cutoff&&x.updatedAt&&x.updatedAt<=syncedAt);
-  const eligiblePurchases=(b.purchases||[]).filter(x=>x.status!=='Cancelled'&&x.date<cutoff&&x.updatedAt&&x.updatedAt<=syncedAt);
-  if(!eligibleSales.length&&!eligiblePurchases.length){alert('Archive করার মতো পুরনো, সম্পূর্ণ-পরিশোধিত ও Cloud-Sync-নিশ্চিত Invoice পাওয়া যায়নি।\n\n(শর্ত: '+cutoff+'-এর আগের তারিখ, বাকি নেই, এবং শেষ Sync-এর আগেই তৈরি/সম্পাদিত হয়েছে।)');return}
-  if(!confirm(`${eligibleSales.length} টি বিক্রয় ও ${eligiblePurchases.length} টি ক্রয় Invoice (মোট ${eligibleSales.length+eligiblePurchases.length} টি) Archive করা হবে।\n\nএগুলো মুছে যাবে না — নিরাপদে বড় জায়গায় (IndexedDB) সরানো হবে, সব হিসাব (Cash, Stock, Trial Balance) অপরিবর্তিত থাকবে। এগিয়ে যাবেন?`))return;
-
-  const snapshot=JSON.parse(JSON.stringify(b));
-  const beforeBal={}; b.accounts.forEach(a=>beforeBal[a.id]=accountBalance(a.id));
-
-  pushSafetyBackup('Archive করার আগে');
-
-  try{
-    if(eligibleSales.length)await coldPutMany(b.bizKey,'sales',eligibleSales);
-    if(eligiblePurchases.length)await coldPutMany(b.bizKey,'purchases',eligiblePurchases);
-  }catch(e){alert('IndexedDB-তে সংরক্ষণ ব্যর্থ হয়েছে — কোনো ডেটা সরানো হয়নি।\n'+(e.message||e));return}
-
-  b.archivedTrial=b.archivedTrial||{}; b.archivedCash=b.archivedCash||{};
-  const addTrial=(name,d,c)=>{b.archivedTrial[name]=b.archivedTrial[name]||{d:0,c:0};b.archivedTrial[name].d+=d;b.archivedTrial[name].c+=c;};
-  const addCash=(accId,amt)=>{b.archivedCash[accId]=(b.archivedCash[accId]||0)+amt;};
-
-  eligibleSales.forEach(x=>{
-    const acc=accountById(x.paymentAccount||'cash'), an=acc?acc.name:'Cash';
-    const total=Number(x.total||0), paid=Number(x.paid||0);
-    if(paid){addTrial(an,paid,0);addCash(acc?acc.id:'cash',paid);}
-    addTrial('Sales Revenue',0,total);
-    const c=saleCost(b,x);
-    if(c){addTrial('Cost of Sales',c,0);addTrial('Inventory',0,c);}
-  });
-  eligiblePurchases.forEach(x=>{
-    const acc=accountById(x.paymentAccount||'cash'), an=acc?acc.name:'Cash';
-    const total=Number(x.total||0);
-    addTrial('Inventory',total,0);
-    addTrial(an,0,total);
-    addCash(acc?acc.id:'cash',-total);
-  });
-
-  const saleIds=new Set(eligibleSales.map(x=>x.id)), purIds=new Set(eligiblePurchases.map(x=>x.id));
-  b.sales=b.sales.filter(x=>!saleIds.has(x.id));
-  b.purchases=b.purchases.filter(x=>!purIds.has(x.id));
-
-  let ok=true, badAcc=null;
-  for(const a of b.accounts){ if(Math.abs(accountBalance(a.id)-(beforeBal[a.id]||0))>0.01){ok=false;badAcc=a.name;break;} }
-  if(!ok){
-    db.businesses[bi]=snapshot;
-    save();
-    alert('⚠️ Archive বাতিল করা হয়েছে — "'+badAcc+'" হিসাবের ব্যালেন্স নিরাপদে যাচাই করা যায়নি, তাই সতর্কতাবশত কোনো ডেটা সরানো হয়নি। এই মেসেজের স্ক্রিনশট নিয়ে জানান।');
-    return;
-  }
-
-  save();
-  renderArchiveStatus(); renderStorageUsage();
-  alert(`✅ Archive সম্পন্ন হয়েছে।\n\n${eligibleSales.length+eligiblePurchases.length} টি পুরনো Invoice নিরাপদে সরানো হয়েছে। Cash, Stock, Trial Balance, Balance Sheet — সব হিসাব যাচাই করে অপরিবর্তিত পাওয়া গেছে। Browser Storage-এ এখন বেশি জায়গা খালি আছে।`);
-}
-const _v26OriginalSave=save;save=function(){
-  try{stampChangedRecords()}catch(e){console.error('stampChangedRecords call failed',e)}
-  const ok=_v26OriginalSave();
-  if(ok){
-    try{renderAll()}catch(e){console.error('Refresh after save failed',e)}
-    scheduleCloudPush();
-    try{_lastSavedSnapshot=JSON.parse(JSON.stringify(db))}catch(e){}
-  }
-  return ok;
-};
+const _v26OriginalSave=save;save=function(){const ok=_v26OriginalSave();if(ok){try{renderAll()}catch(e){console.error('Refresh after save failed',e)}scheduleCloudPush();}return ok};
 /* Coming back online: if this device has unsynced (dirty) changes, PUSH them (fixes the old bug where offline sales just sat unsynced); otherwise pull-merge any new cloud data. */
 window.addEventListener('online',()=>{
   renderCloudStatus();
@@ -1931,12 +1695,12 @@ function printInvoice(invoice){
 }
 function editInvoice(invoice){let b=biz(),x=b.sales.find(x=>x.invoice===invoice);if(x){startSalePOS(x.id);return}x=b.purchases.find(x=>x.invoice===invoice);if(x)openInvoice('purchase',x)}
 function deleteInvoice(invoice,type){if(!confirm('Invoice মুছে ফেলবেন? Stock পুনরায় সমন্বয় হবে।'))return;let b=biz(),list=type==='sale'?b.sales:b.purchases,x=list.find(v=>v.invoice===invoice);if(x)x.items.forEach(i=>{let p=b.products.find(p=>p.id===i.productId);if(p)p.stock += type==='sale'?i.qty:-i.qty});if(x){let idx=list.findIndex(v=>v.invoice===invoice);list.splice(idx,1)}save()}
-function saveSettings(silent){if(!requirePerm('settings'))return;let b=biz();Object.assign(b,{name:sName.value,phone:sPhone.value,email:sEmail.value,address:sAddress.value,currency:sCurrency.value||'৳',prefix:sPrefix.value||'INV',footer:sFooter.value,paper:sPaper?.value||'80mm',printer:sPrinter?.value||'',printLogo:sPrintLogo?.value||'yes',invoiceDesign:sInvoiceDesign?.value||'classic',themeColor:sThemeColor?.value||'#6b57d9'});save();applyTheme();if(!silent){alert('Settings Save হয়েছে। Invoice Design ও Theme Color-ও Save হয়েছে।')}else if(typeof showAutoSaveTick==='function'){showAutoSaveTick();}}
+function saveSettings(silent){if(!requirePerm('settings'))return;let b=biz();Object.assign(b,{name:sName.value,phone:sPhone.value,email:sEmail.value,address:sAddress.value,currency:sCurrency.value||'৳',prefix:sPrefix.value||'INV',footer:sFooter.value,paper:sPaper?.value||'80mm',printer:sPrinter?.value||'',printLogo:sPrintLogo?.value||'yes',invoiceDesign:sInvoiceDesign?.value||'classic',themeColor:sThemeColor?.value||'#6b57d9',sidebarColor:sSidebarColor?.value||'#ffffff',dashboardColors:{stat1:sBoxStat1?.value||'#2563eb',stat2:sBoxStat2?.value||'#e5892b',stat3:sBoxStat3?.value||'#df5360',stat4:sBoxStat4?.value||'#20a56a',q1:sBoxQ1?.value||'#6b57d9',q2:sBoxQ2?.value||'#2563eb',q3:sBoxQ3?.value||'#20a56a',q4:sBoxQ4?.value||'#e5892b'}});save();applyTheme();if(!silent){alert('Settings Save হয়েছে। Invoice Design ও Theme Color-ও Save হয়েছে।')}else if(typeof showAutoSaveTick==='function'){showAutoSaveTick();}}
 function toggleProfileMenu(){document.getElementById('profileMenu').classList.toggle('show')}
 function closeProfileMenu(){document.getElementById('profileMenu').classList.remove('show')}
 document.addEventListener('click',e=>{if(!e.target.closest('.profile-wrap'))closeProfileMenu()});
 function openNewBusiness(){if(!requirePerm('settings'))return;closeProfileMenu();modalTitle.textContent='Start New Business — নতুন Business Account';modalBody.innerHTML=`<div class="notice">একই অ্যাপের মধ্যে নতুন ব্যবসা তৈরি করুন। নতুন ব্যবসার Products, Sales, Purchase, Cash/Accounts ও Users আলাদা থাকবে।</div><div class="form-grid"><div class="field"><label>Business Name *</label><input id="nbName" placeholder="যেমন: Bismillah Store & Distribution Center"></div><div class="field"><label>Owner / Admin Name</label><input id="nbOwner" placeholder="Admin Name"></div><div class="field"><label>Phone</label><input id="nbPhone" placeholder="017xxxxxxxx"></div><div class="field"><label>Email</label><input id="nbEmail" placeholder="business@email.com"></div><div class="field"><label>Address</label><input id="nbAddress" placeholder="Business address"></div><div class="field"><label>Currency</label><input id="nbCurrency" value="৳"></div><div class="field"><label>Admin Username *</label><input id="nbUsername" value="admin"></div><div class="field"><label>Admin Password *</label><input id="nbPassword" type="password" value="admin123"></div><div class="field"><label>Invoice Prefix</label><input id="nbPrefix" value="INV"></div></div><div class="actions" style="margin-top:18px;justify-content:flex-end"><button class="btn secondary" onclick="closeModal()">Cancel</button><button class="btn" onclick="createBusinessAccount()">🏢 Create Business Account</button></div>`;modal.classList.add('show');setTimeout(()=>document.getElementById('nbName').focus(),50)}
-function createBusinessAccount(){let name=(document.getElementById('nbName').value||'').trim(),owner=(document.getElementById('nbOwner').value||'').trim()||'Admin',phone=(document.getElementById('nbPhone').value||'').trim(),email=(document.getElementById('nbEmail').value||'').trim(),address=(document.getElementById('nbAddress').value||'').trim(),currency=(document.getElementById('nbCurrency').value||'৳').trim(),username=(document.getElementById('nbUsername').value||'').trim(),password=document.getElementById('nbPassword').value||'',prefix=(document.getElementById('nbPrefix').value||'INV').trim();if(!name||!username||!password){alert('Business Name, Admin Username এবং Password দিন।');return}if(db.businesses.some(b=>String(b.name).trim().toLowerCase()===name.toLowerCase())){alert('এই নামে Business আগে থেকেই আছে।');return}if(db.businesses.some(b=>(b.users||[]).some(u=>u.username===username))){alert('এই Username অন্য Business-এ আগে থেকেই আছে। অন্য Username দিন।');return}let nb={name,bizKey:'biz_'+id(),phone,email,address,currency:currency||'৳',prefix:prefix||'INV',footer:'ধন্যবাদ। আবার আসবেন।',paper:'80mm',printer:'',printLogo:'yes',invoiceDesign:'classic',themeColor:'#6b57d9',products:[],parties:[{id:id(),name:'Cash Sale',type:'Customer',phone:'',address:'',balance:0}],sales:[],purchases:[],cash:[],expenses:[],accounts:[{id:'cash',name:'Cash',type:'Cash',opening:0}],users:[{id:id(),name:owner,username,password,role:'Admin',permission:'সব Permission'}]};db.businesses.push(nb);db.currentBusiness=db.businesses.length-1;currentUser=nb.users[0];localStorage.setItem('bismillah_logged_user',JSON.stringify({username:currentUser.username,businessIndex:db.currentBusiness}));save();closeModal();showPage('dashboard');alert('নতুন Business Account সফলভাবে তৈরি হয়েছে। এখন '+name+' চালু আছে।')}
+function createBusinessAccount(){let name=(document.getElementById('nbName').value||'').trim(),owner=(document.getElementById('nbOwner').value||'').trim()||'Admin',phone=(document.getElementById('nbPhone').value||'').trim(),email=(document.getElementById('nbEmail').value||'').trim(),address=(document.getElementById('nbAddress').value||'').trim(),currency=(document.getElementById('nbCurrency').value||'৳').trim(),username=(document.getElementById('nbUsername').value||'').trim(),password=document.getElementById('nbPassword').value||'',prefix=(document.getElementById('nbPrefix').value||'INV').trim();if(!name||!username||!password){alert('Business Name, Admin Username এবং Password দিন।');return}if(db.businesses.some(b=>String(b.name).trim().toLowerCase()===name.toLowerCase())){alert('এই নামে Business আগে থেকেই আছে।');return}if(db.businesses.some(b=>(b.users||[]).some(u=>u.username===username))){alert('এই Username অন্য Business-এ আগে থেকেই আছে। অন্য Username দিন।');return}let nb={name,phone,email,address,currency:currency||'৳',prefix:prefix||'INV',footer:'ধন্যবাদ। আবার আসবেন।',paper:'80mm',printer:'',printLogo:'yes',invoiceDesign:'classic',themeColor:'#6b57d9',products:[],parties:[{id:id(),name:'Cash Sale',type:'Customer',phone:'',address:'',balance:0}],sales:[],purchases:[],cash:[],expenses:[],accounts:[{id:'cash',name:'Cash',type:'Cash',opening:0}],users:[{id:id(),name:owner,username,password,role:'Admin',permission:'সব Permission'}]};db.businesses.push(nb);db.currentBusiness=db.businesses.length-1;currentUser=nb.users[0];localStorage.setItem('bismillah_logged_user',JSON.stringify({username:currentUser.username,businessIndex:db.currentBusiness}));save();closeModal();showPage('dashboard');alert('নতুন Business Account সফলভাবে তৈরি হয়েছে। এখন '+name+' চালু আছে।')}
 function addBusiness(){openNewBusiness()}
 function selectBusiness(i){db.currentBusiness=i;try{localStorage.setItem('bismillah_logged_user',JSON.stringify({username:(currentUser&&currentUser.username)||'admin',businessIndex:db.currentBusiness}));}catch(e){}applyTheme();save();showPage('dashboard')}
 function deleteBusinessAccount(i){if(!requirePerm('settings'))return;if(db.businesses.length<=1){alert('অন্তত ১টি Business Account থাকা আবশ্যক। এটি Delete করা যাবে না।');return;}let b=db.businesses[i];if(!b)return;closeProfileMenu();let typed=prompt('এই Business Account এবং এর সব ডেটা (Sales, Purchase, Products, Cash, Users ইত্যাদি) স্থায়ীভাবে মুছে যাবে। নিশ্চিত করতে হুবহু Business এর নাম লিখুন:\n\n'+b.name);if(typed===null)return;if(String(typed).trim()!==String(b.name).trim()){alert('নাম মিলেনি। Business Account Delete হয়নি।');return;}db.businesses.splice(i,1);if(db.currentBusiness>=db.businesses.length)db.currentBusiness=db.businesses.length-1;else if(db.currentBusiness>i)db.currentBusiness--;let nb=db.businesses[db.currentBusiness],nu=(nb.users||[])[0];if(nu){currentUser=nu;try{localStorage.setItem('bismillah_logged_user',JSON.stringify({username:nu.username,businessIndex:db.currentBusiness}));}catch(e){}}applyTheme();save();showPage('dashboard');alert('Business Account Delete হয়েছে।');}
@@ -2037,7 +1801,19 @@ function ensureV12Data(){
   });
 }
 ensureV12Data();
-function applyTheme(){let b=biz();let c=b?.themeColor||'#6b57d9';document.documentElement.style.setProperty('--primary',c);document.documentElement.style.setProperty('--primary2',shadeColor(c,25));document.documentElement.style.setProperty('--softTheme',hexToRgba(c,.10));}
+function applyTheme(){let b=biz();let c=b?.themeColor||'#6b57d9';document.documentElement.style.setProperty('--primary',c);document.documentElement.style.setProperty('--primary2',shadeColor(c,25));document.documentElement.style.setProperty('--softTheme',hexToRgba(c,.10));applyDashboardColors();applySidebarColor();}
+function applySidebarColor(){let b=biz();let sc=b?.sidebarColor||'#ffffff';document.documentElement.style.setProperty('--sidebarBg',sc);}
+function applyDashboardColors(){
+  let b=biz();let dc=(b&&b.dashboardColors)||{};
+  const setBox=(elId,color,softAlpha)=>{let el=document.getElementById(elId);if(!el||!color)return;el.style.setProperty('--card-accent',color);el.style.setProperty('--q-accent',color);el.style.setProperty('--card-accent-soft',hexToRgba(color,softAlpha||.12));el.style.setProperty('--q-accent-soft',hexToRgba(color,softAlpha||.12));};
+  setBox('statCardSales',dc.stat1);setBox('statCardPurchase',dc.stat2);setBox('statCardDue',dc.stat3);setBox('statCardStock',dc.stat4);
+  setBox('quickBtnSale',dc.q1);setBox('quickBtnPurchase',dc.q2);setBox('quickBtnProduct',dc.q3);setBox('quickBtnReport',dc.q4);
+}
+function resetDashboardColors(){
+  if(!requirePerm('settings'))return;
+  let b=biz();delete b.dashboardColors;b.sidebarColor='#ffffff';save();renderSettings();applyTheme();
+  if(typeof showAutoSaveTick==='function')showAutoSaveTick();
+}
 function hexToRgba(hex,a){let h=String(hex||'').replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');let n=parseInt(h,16);if(isNaN(n))return `rgba(107,87,217,${a})`;return `rgba(${n>>16},${(n>>8)&255},${n&255},${a})`}
 function shadeColor(hex,amt){let h=String(hex||'#6b57d9').replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');let n=parseInt(h,16);if(isNaN(n))return '#8a78e8';let r=Math.min(255,Math.max(0,(n>>16)+amt)),g=Math.min(255,Math.max(0,((n>>8)&255)+amt)),bl=Math.min(255,Math.max(0,(n&255)+amt));return '#'+[r,g,bl].map(v=>v.toString(16).padStart(2,'0')).join('')}
 function applyThemePreset(v){if(!v)return;let el=document.getElementById('sThemeColor');if(el)el.value=v;document.documentElement.style.setProperty('--primary',v);document.documentElement.style.setProperty('--primary2',shadeColor(v,25));}
@@ -2140,7 +1916,6 @@ function v13Entries(b,dateFilter){
   let r=[]; const add=(d,ref,a,db,cr)=>{if(!dateFilter||d===dateFilter)v13Add(r,d,ref,a,db,cr)};
   // Account opening balances: positive = debit asset/expense, negative = credit liability/equity/revenue.
   b.accounts.forEach(a=>{let o=Number(a.opening||0);if(o>0)add('Opening','OPEN',a.name,o,0);else if(o<0)add('Opening','OPEN',a.name,0,-o)});
-  if(b.archivedTrial)Object.entries(b.archivedTrial).forEach(([name,v])=>{if(v.d||v.c)add('Opening','ARCHIVED',name,v.d||0,v.c||0)});
   b.sales.filter(x=>x.status!=='Cancelled').forEach(x=>{let an=v13Acct(x.paymentAccount||'cash')?.name||'Cash';let total=Number(x.total||0),paid=Number(x.paid||0),due=Math.max(0,total-paid);if(paid)add(x.date,x.invoice,an,paid,0);if(due)add(x.date,x.invoice,'Accounts Receivable',due,0);add(x.date,x.invoice,'Sales Revenue',0,total);let c=saleCost(b,x);if(c){add(x.date,x.invoice,'Cost of Sales',c,0);add(x.date,x.invoice,'Inventory',0,c)}});
   b.purchases.filter(x=>x.status!=='Cancelled').forEach(x=>{let an=v13Acct(x.paymentAccount||'cash')?.name||'Cash';let total=Number(x.total||0);add(x.date,x.invoice,'Inventory',total,0);add(x.date,x.invoice,an,0,total)});
   b.expenses.forEach(x=>{let an=v13Acct(x.accountId||'cash')?.name||'Cash';let total=Number(x.amount||0);add(x.date,'EXP','Expense — '+(x.category||'General'),total,0);add(x.date,'EXP',an,0,total)});
@@ -2179,7 +1954,7 @@ function savePurchasePOS(){let b=biz();if(!_purchaseItems.length){alert('কম�
 }
 function printPurchasePOS(){if(_purchaseEditId){let x=biz().purchases.find(x=>x.id===_purchaseEditId);if(x)printInvoice(x.invoice);return}alert('আগে Purchase Invoice Save করুন, তারপর Print করুন।')}
 window.editInvoice=function(invoice){let b=biz(),x=b.sales.find(x=>x.invoice===invoice);if(x){startSalePOS(x.id);return}x=b.purchases.find(x=>x.invoice===invoice);if(x){startPurchasePOS(x.id);return}alert('Invoice পাওয়া যায়নি।')};
-(function(){try{db.businesses.forEach(b=>{b.purchasePrefix=b.purchasePrefix||'PUR';b.bizKey=b.bizKey||('biz_'+id());b.purchases=(b.purchases||[]).map(x=>({...x,status:x.status||'Active',paymentAccount:x.paymentAccount||'cash'}))});localStorage.setItem('bismillah_store_v1',JSON.stringify(db))}catch(e){console.warn('V17 migration',e)}})();
+(function(){try{db.businesses.forEach(b=>{b.purchasePrefix=b.purchasePrefix||'PUR';b.purchases=(b.purchases||[]).map(x=>({...x,status:x.status||'Active',paymentAccount:x.paymentAccount||'cash'}))});localStorage.setItem('bismillah_store_v1',JSON.stringify(db))}catch(e){console.warn('V17 migration',e)}})();
 </script>
 
 <script>
@@ -2214,7 +1989,7 @@ window.openPurchaseModalFixed = function(existing){
   }
   titleEl.textContent = existing ? 'ক্রয় Invoice Edit' : 'নতুন Purchase Invoice';
   bodyEl.innerHTML = `
-    <div style="display:grid;grid-template-columns:minmax(300px,1fr) minmax(340px,1.2fr);gap:18px;align-items:start">
+    <div class="purchase-pos-grid" style="display:grid;grid-template-columns:minmax(300px,1fr) minmax(340px,1.2fr);gap:18px;align-items:start">
       <div class="card" style="padding:14px">
         <div class="form-grid" style="grid-template-columns:1fr 1fr">
           <div class="field"><label>Supplier / Party</label><input id="purParty" value="${esc(existing?.party||'Cash Sale')}"></div>
@@ -2637,7 +2412,7 @@ v21EnsureProductReturns();
 <script>
 /* BUSINESS PROFILE AUTO-SAVE: Business & Invoice Settings fields save automatically as the user types/changes them */
 (function(){
-  const FIELD_IDS=['sName','sPhone','sEmail','sAddress','sCurrency','sPrefix','sFooter','sPaper','sPrinter','sPrintLogo','sInvoiceDesign','sThemeColor'];
+  const FIELD_IDS=['sName','sPhone','sEmail','sAddress','sCurrency','sPrefix','sFooter','sPaper','sPrinter','sPrintLogo','sInvoiceDesign','sThemeColor','sSidebarColor','sBoxStat1','sBoxStat2','sBoxStat3','sBoxStat4','sBoxQ1','sBoxQ2','sBoxQ3','sBoxQ4'];
   let timer=null, wired=false;
   window.showAutoSaveTick=function(){
     const el=document.getElementById('autoSaveStatus');
@@ -2700,14 +2475,10 @@ v21EnsureProductReturns();
 </script>
 <script>
 /* Camera barcode scanner (mobile camera) for Sales / Purchase POS */
-let _cameraScanner=null, _cameraScanMode='sales', _cameraScanHandled=false, _lastScannedCode=null, _lastScannedAt=0, _cameraScanCount=0;
+let _cameraScanner=null, _cameraScanMode='sales';
 
 function openCameraScan(mode){
   _cameraScanMode = mode || 'sales';
-  _cameraScanHandled = false;
-  _lastScannedCode = null;
-  _lastScannedAt = 0;
-  _cameraScanCount = 0;
   const modalEl=document.getElementById('cameraScanModal');
   const statusEl=document.getElementById('cameraScanStatus');
   const readerEl=document.getElementById('cameraScanReader');
@@ -2733,24 +2504,13 @@ function openCameraScan(mode){
       camId,
       { fps: 10, qrbox: { width: 260, height: 160 } },
       function(decodedText){
-        if(_cameraScanHandled) return;
-        // Ignore the exact same barcode scanned again within the cooldown window —
-        // the camera keeps seeing the same physical barcode for a moment after a hit.
-        const now=Date.now();
-        if(decodedText===_lastScannedCode && (now-_lastScannedAt)<1800) return;
-        _cameraScanHandled = true;
-        _lastScannedCode = decodedText;
-        _lastScannedAt = now;
-        _cameraScanCount++;
-        if(statusEl) statusEl.textContent='✅ ('+_cameraScanCount+') পাওয়া গেছে: '+decodedText+' — পরের পণ্য স্ক্যান করুন, শেষ হলে "বন্ধ করুন"-এ চাপুন।';
+        if(statusEl) statusEl.textContent='✅ পাওয়া গেছে: '+decodedText;
         handleBarcodeScanned(decodedText, _cameraScanMode);
-        // Stay open for continuous scanning — just re-arm after a brief cooldown
-        // instead of closing the camera after every single item.
-        setTimeout(()=>{ _cameraScanHandled=false; },700);
+        closeCameraScan();
       },
       function(){ /* scan failure per-frame, ignore */ }
     ).then(function(){
-      statusEl.textContent='বারকোডের দিকে ক্যামেরা ধরুন... (একাধিক পণ্য একটানা স্ক্যান করা যাবে)';
+      statusEl.textContent='বারকোডের দিকে ক্যামেরা ধরুন...';
     }).catch(function(err){
       statusEl.textContent='ক্যামেরা চালু করা যায়নি: '+(err && err.message ? err.message : err);
     });
@@ -2770,31 +2530,31 @@ function closeCameraScan(){
   if(modalEl) modalEl.classList.remove('show');
 }
 
+function playBeepSound(){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    osc.type='sine';
+    osc.frequency.value=1000;
+    gain.gain.setValueAtTime(0.25,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.15);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime+0.15);
+    osc.onended=function(){ ctx.close && ctx.close(); };
+  }catch(e){ /* ignore audio errors */ }
+}
+
 function handleBarcodeScanned(code, mode){
   code=(code||'').trim();
   if(!code) return;
+  playBeepSound();
   if(mode==='purchase'){
-    // Directly add the product instead of round-tripping through the text field + simulated
-    // Enter keypress — this avoids silently failing if the purchase modal/DOM was momentarily
-    // not ready (e.g. right after the camera permission prompt on some mobile browsers).
-    const modalOpen = document.getElementById('modal')?.classList.contains('show');
-    const el = document.getElementById('purBarcode');
-    if(!modalOpen || !el){
-      alert('ক্রয় Invoice ফর্মটি খোলা নেই। "নতুন ক্রয়" থেকে আবার শুরু করুন, তারপর ক্যামেরা স্ক্যান করুন।');
-      return;
-    }
-    const p=biz().products.find(x=>String(x.barcode||'').toLowerCase()===code.toLowerCase());
-    if(!p){
-      alert('এই Barcode ("'+code+'") এর কোনো পণ্য পাওয়া যায়নি।');
-      el.value=code; el.select();
-      return;
-    }
-    addPurchasePOSProduct(p.id);
-    el.value='';
-    if(typeof renderPurchaseProducts==='function') renderPurchaseProducts();
-    if(typeof renderPurchasePOSItems==='function') renderPurchasePOSItems();
-    if(typeof purchasePOSRecalc==='function') purchasePOSRecalc();
-    setTimeout(()=>el.focus(),30);
+    const el=document.getElementById('purBarcode');
+    if(el) el.value=code;
+    if(typeof purchaseBarcodeKey==='function') purchaseBarcodeKey({key:'Enter',preventDefault:function(){}});
   }else{
     const el=document.getElementById('posBarcode');
     if(el) el.value=code;

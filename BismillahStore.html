@@ -16,7 +16,7 @@ body{margin:0;font-family:Arial,"Noto Sans Bengali",sans-serif;background:var(--
 button,input,select,textarea{font:inherit}
 button{cursor:pointer;border:0}
 .app{display:flex;min-height:100vh}
-.sidebar{width:270px;background:var(--sidebarBg,#fff);border-right:1px solid var(--border);position:fixed;inset:0 auto 0 0;z-index:10;overflow:auto}
+.sidebar{width:270px;background:#fff;border-right:1px solid var(--border);position:fixed;inset:0 auto 0 0;z-index:10;overflow:auto}
 .brand{background:linear-gradient(135deg,var(--primary),#8776e6);color:white;padding:22px 20px}
 .brand h1{margin:0;font-size:23px}.brand p{margin:7px 0 0;opacity:.85;font-size:13px}
 .business{margin:14px;background:#faf9ff;border:1px solid #e5e0ff;border-radius:14px;padding:12px;box-shadow:0 2px 7px #332f6508}
@@ -45,6 +45,10 @@ table{width:100%;border-collapse:collapse;min-width:650px}th,td{padding:12px;bor
 .modal{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:50;padding:20px}.modal.show{display:flex}.modal-box{background:#fff;border-radius:16px;max-width:800px;width:100%;max-height:90vh;overflow:auto;padding:22px}.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.close{background:#eee;border-radius:50%;width:34px;height:34px}
 .badge{display:inline-block;padding:4px 8px;border-radius:20px;font-size:11px;background:#eeeaff;color:var(--primary)}.low{color:var(--danger);font-weight:bold}
 .notice{padding:13px;border-radius:10px;background:#fff8e8;color:#8a641c;margin-bottom:15px}
+.notice.warn{background:#fff0f1;color:#a3323f;border:1px solid #ffd0d5}
+.low-stock-list{display:flex;flex-direction:column;gap:8px;margin-bottom:15px}
+.low-stock-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:#fff5f6;border:1px solid #ffd7dc;border-radius:12px}
+.low-stock-item small{color:var(--muted)}
 .empty{padding:30px;text-align:center;color:var(--muted)}
 .invoice-product-search{width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
 .logo-invoice{max-width:90px;max-height:60px;object-fit:contain}
@@ -72,7 +76,7 @@ table{width:100%;border-collapse:collapse;min-width:650px}th,td{padding:12px;bor
 .pos-item .qty,.pos-item .price{width:100%;padding:8px;border:1px solid var(--border);border-radius:7px}
 .pos-total{font-size:23px;font-weight:bold;text-align:right;margin-top:14px}
 .pos-pay{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
-@media(max-width:900px){.sales-pos{grid-template-columns:1fr}.pos-invoice{position:static}.product-results{grid-template-columns:1fr}.purchase-pos-grid{grid-template-columns:1fr!important}}
+@media(max-width:900px){.sales-pos{grid-template-columns:1fr}.pos-invoice{position:static}.product-results{grid-template-columns:1fr}}
 @media(max-width:600px){.pos-search,.pos-pay{grid-template-columns:1fr}.pos-item{grid-template-columns:1fr 65px 85px 85px 32px;font-size:12px}}
 
 @media(max-width:1000px){.cards{grid-template-columns:repeat(2,1fr)}.quick{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:repeat(2,1fr)}}
@@ -231,6 +235,7 @@ function softRefreshCurrentPage(){
     <button data-page="sales">🛒 বিক্রয়</button>
     <button data-page="salesList">🧾 ইনভয়েস</button>
     <button data-page="purchase">🛍️ ক্রয়</button>
+    <button data-page="purchaseList">🧾 ক্রয় ইনভয়েস</button>
     <button data-page="products">📦 পণ্য ও স্টক</button>
     <button data-page="parties">👥 পার্টি / কাস্টমার</button>
     <button data-page="dueLedger">🧾 বাকির হিসাব</button>
@@ -265,17 +270,19 @@ function softRefreshCurrentPage(){
 <section id="dashboard" class="page active">
   <div class="notice">এই HTML অ্যাপটি সম্পূর্ণ Offline-এ চলে। ডেটা আপনার ব্রাউজারের Local Storage-এ রাখা হচ্ছে। নিয়মিত Backup নিন।</div>
   <div class="grid cards">
-    <div class="card stat c-blue" id="statCardSales"><div class="stat-ic">🛒</div><div class="label">আজকের বিক্রয়</div><div class="value" id="dSales">৳ 0.00</div><div class="sub">আজ</div></div>
-    <div class="card stat c-orange" id="statCardPurchase"><div class="stat-ic">🛍️</div><div class="label">আজকের ক্রয়</div><div class="value" id="dPurchase">৳ 0.00</div><div class="sub">আজ</div></div>
-    <div class="card stat c-red" id="statCardDue"><div class="stat-ic">🧾</div><div class="label">মোট বাকি (Customer Due)</div><div class="value" id="dDue">৳ 0.00</div><div class="sub">সব কাস্টমারের বাকি</div></div>
-    <div class="card stat c-green" id="statCardStock"><div class="stat-ic">📦</div><div class="label">বর্তমান Stock Value</div><div class="value" id="dStock">৳ 0.00</div><div class="sub">Purchase মূল্য</div></div>
+    <div class="card stat c-blue"><div class="stat-ic">🛒</div><div class="label">আজকের বিক্রয়</div><div class="value" id="dSales">৳ 0.00</div><div class="sub">আজ</div></div>
+    <div class="card stat c-orange"><div class="stat-ic">🛍️</div><div class="label">আজকের ক্রয়</div><div class="value" id="dPurchase">৳ 0.00</div><div class="sub">আজ</div></div>
+    <div class="card stat c-red"><div class="stat-ic">🧾</div><div class="label">মোট বাকি (Customer Due)</div><div class="value" id="dDue">৳ 0.00</div><div class="sub">সব কাস্টমারের বাকি</div></div>
+    <div class="card stat c-green"><div class="stat-ic">📦</div><div class="label">বর্তমান Stock Value</div><div class="value" id="dStock">৳ 0.00</div><div class="sub">Purchase মূল্য</div></div>
+    <div class="card stat c-red"><div class="stat-ic">⚠️</div><div class="label">লো স্টক এলার্ম</div><div class="value" id="dLowStock">0</div><div class="sub">Alert সীমার নিচে পণ্য</div></div>
   </div>
+  <div id="lowStockDashboardBox"></div>
   <div class="section-head"><h2>দ্রুত কাজ</h2></div>
   <div class="grid quick">
-    <button class="q-purple" id="quickBtnSale" onclick="startSalePOS()"><div class="q-ic">🧾</div><b>নতুন বিক্রয়</b><span>নতুন Invoice তৈরি করুন</span></button>
-    <button class="q-blue" id="quickBtnPurchase" onclick="startPurchasePOS()"><div class="q-ic">🛒</div><b>নতুন ক্রয়</b><span>Purchase Entry করুন</span></button>
-    <button class="q-green" id="quickBtnProduct" onclick="showPage('products')"><div class="q-ic">📦</div><b>পণ্য যোগ করুন</b><span>Product ও Stock পরিচালনা</span></button>
-    <button class="q-orange" id="quickBtnReport" onclick="showPage('reports')"><div class="q-ic">📊</div><b>রিপোর্ট দেখুন</b><span>Sales, Purchase, Profit, Stock</span></button>
+    <button class="q-purple" onclick="startSalePOS()"><div class="q-ic">🧾</div><b>নতুন বিক্রয়</b><span>নতুন Invoice তৈরি করুন</span></button>
+    <button class="q-blue" onclick="startPurchasePOS()"><div class="q-ic">🛒</div><b>নতুন ক্রয়</b><span>Purchase Entry করুন</span></button>
+    <button class="q-green" onclick="showPage('products')"><div class="q-ic">📦</div><b>পণ্য যোগ করুন</b><span>Product ও Stock পরিচালনা</span></button>
+    <button class="q-orange" onclick="showPage('reports')"><div class="q-ic">📊</div><b>রিপোর্ট দেখুন</b><span>Sales, Purchase, Profit, Stock</span></button>
   </div>
   <div class="section-head"><h2>সাম্প্রতিক Invoice</h2></div>
   <div class="table-wrap"><table><thead><tr><th>Invoice</th><th>ধরন</th><th>Party</th><th>তারিখ</th><th>মোট</th><th>অ্যাকশন</th></tr></thead><tbody id="recentTable"></tbody></table></div>
@@ -389,18 +396,110 @@ function softRefreshCurrentPage(){
 </section>
 
 <section id="purchase" class="page">
- <div class="section-head"><h2>Purchase</h2><button class="btn" type="button" onclick="openPurchasePOSFixed()">+ নতুন Purchase</button></div>
- <div class="table-wrap"><table><thead><tr><th>Invoice</th><th>Supplier</th><th>Date</th><th>Total</th><th>Payment</th><th>Action</th></tr></thead><tbody id="purchaseTable"></tbody></table></div>
+  <div class="section-head">
+    <h2>🛍️ ক্রয়</h2>
+    <div class="actions">
+      <button class="btn secondary" onclick="newPurchasePOS()">নতুন ক্রয়</button>
+      <button class="btn danger" onclick="resetPurchasePOS()">🔄 রিসেট</button>
+      <button class="btn secondary" onclick="showPage('purchaseList')">📋 ইনভয়েস তালিকা</button>
+      <button class="btn secondary" onclick="showPage('purchaseSummary')">📊 ক্রয় সারাংশ</button>
+    </div>
+  </div>
+
+  <div class="sales-pos">
+    <div class="pos-panel">
+      <h3 style="margin-top:0">🔎 পণ্য নির্বাচন</h3>
+      <div class="pos-search">
+        <div class="barcode-box">
+          <input id="purBarcode" placeholder="Barcode Scan / লিখুন" autocomplete="off"
+                 onkeydown="purchaseBarcodeKey(event)">
+          <button type="button" class="barcode-cam-btn" title="ক্যামেরা দিয়ে Scan" onclick="openCameraScan('purchase')">📷</button>
+        </div>
+        <input id="purNameSearch" placeholder="পণ্যের নাম দিয়ে Search" autocomplete="off"
+               oninput="renderPurchaseProducts()">
+      </div>
+      <div class="notice">Barcode Scanner দিয়ে Scan করে <b>Enter</b> চাপলে পণ্য সরাসরি ডান পাশের Invoice-এ যোগ হবে। নাম দিয়ে Search করলেও পণ্য নির্বাচন করা যাবে।</div>
+      <div id="purchaseProductResults" class="product-results"></div>
+    </div>
+
+    <div class="pos-panel pos-invoice">
+      <div class="pos-invoice-head">
+        <div>
+          <h3 style="margin:0">🧾 ক্রয় ইনভয়েস</h3>
+          <small id="purInvoiceNo">নতুন Invoice</small>
+        </div>
+        <button class="btn danger" onclick="clearPurchasePOS()">খালি করুন</button>
+      </div>
+
+      <div style="margin:10px 0 7px;display:flex;justify-content:space-between;align-items:center">
+        <b>পণ্য তালিকা</b><span id="purItemCount" class="badge">0 Item</span>
+      </div>
+      <div id="purchasePOSItems" class="pos-items"></div>
+
+      <div class="form-grid">
+        <div class="field"><label>Supplier / Party</label>
+          <input id="purParty" value="Cash Purchase" oninput="purchasePOSRecalc()">
+        </div>
+        <div class="field"><label>তারিখ</label>
+          <input id="purDate" type="date" value="">
+        </div>
+        <div class="field"><label>Payment Account</label><select id="purAccount"></select>
+        </div>
+        <div class="field" id="purCashPaidWrap"><label>নগদ প্রদান</label>
+          <input id="purCashPaid" type="number" min="0" value="0" oninput="purchasePOSRecalc()">
+        </div>
+      </div>
+
+      <div class="pos-total">মোট: <span id="purchasePOSTotal">৳ 0.00</span></div>
+      <div style="text-align:right;color:var(--success);font-weight:bold">বাকি: <span id="purchasePOSDue">৳ 0.00</span></div>
+
+      <div class="pos-bottom-actions" style="display:flex;gap:8px;margin-top:15px;flex-wrap:wrap">
+        <button id="cashPurchaseBtn" class="btn" style="flex:1;background:#2563eb;color:#fff" onclick="cashPurchaseAction()">নগদ ক্রয় →</button>
+        <button id="duePurchaseBtn" class="btn secondary" style="flex:1" onclick="openDueSupplierPage()">বাকিতে ক্রয় →</button>
+        <button class="btn secondary" onclick="printPurchasePOS()">🖨️ Print</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="purchaseList" class="page">
+  <div class="section-head">
+    <h2>🧾 ক্রয় ইনভয়েস</h2>
+    <div class="actions">
+      <input id="purchaseInvoiceSearch" placeholder="Invoice / Supplier / Barcode দিয়ে Search" oninput="renderPurchaseList()">
+      <button class="btn" onclick="startPurchasePOS()">+ নতুন ক্রয়</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>তারিখ</th><th>Invoice</th><th>Supplier</th><th>Total</th><th>Paid</th><th>Due</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody id="purchaseListTable"></tbody>
+    </table>
+  </div>
+</section>
+
+<section id="purchaseSummary" class="page">
+  <div class="section-head">
+    <h2>📊 ক্রয় সারাংশ</h2>
+    <button class="btn" onclick="window.print()">Print</button>
+  </div>
+  <div class="grid cards">
+    <div class="card stat"><div class="label">আজকের ক্রয়</div><div class="value" id="purToday">৳ 0.00</div></div>
+    <div class="card stat"><div class="label">এই মাসের ক্রয়</div><div class="value" id="purMonth">৳ 0.00</div></div>
+    <div class="card stat"><div class="label">এই বছরের ক্রয়</div><div class="value" id="purYear">৳ 0.00</div></div>
+    <div class="card stat"><div class="label">মোট বাকি (Supplier Due)</div><div class="value" id="purDueTotal">৳ 0.00</div></div>
+  </div>
 </section>
 
 <section id="products" class="page">
  <div class="section-head"><h2>Product & Stock</h2><div class="actions"><input id="productSearch" placeholder="নাম / Barcode Search" oninput="renderProducts()" style="padding:10px;border:1px solid var(--border);border-radius:9px"><button class="btn" onclick="openProduct()">+ পণ্য যোগ</button></div></div>
+ <div id="lowStockProductsBox"></div>
  <div class="grid cards" style="margin-bottom:16px">
    <div class="card stat"><div class="label">মোট পণ্যের ধরন (Total Products)</div><div class="value" id="productsCountTotal">0</div></div>
    <div class="card stat"><div class="label">মোট স্টক মজুদ (Total Stock Qty)</div><div class="value" id="productsStockQtyCard">0</div></div>
    <div class="card stat"><div class="label">মোট স্টক মূল্য (Total Stock Value)</div><div class="value" id="productsStockValueCard">৳ 0.00</div></div>
  </div>
- <div class="table-wrap products-table-wrap"><table><thead><tr><th>ছবি</th><th>Barcode</th><th>পণ্যের নাম</th><th>Category</th><th>Unit</th><th>Purchase</th><th>Retail Sale</th><th>Wholesale Price</th><th>Min Wholesale Qty</th><th>Stock</th><th>Stock Value</th><th>Action</th></tr></thead><tbody id="productsTable"></tbody><tfoot><tr class="total-row-blue"><th colspan="5">মোট (<span id="productsCountTotal2">0</span> টি পণ্য)</th><th id="productsPurchaseTotal">৳ 0.00</th><th id="productsRetailTotal">৳ 0.00</th><th id="productsWholesaleTotal">৳ 0.00</th><th id="productsMinQtyTotal">0</th><th id="productsStockQtyTotal">0</th><th id="productsStockTotal">৳ 0.00</th><th></th></tr></tfoot></table></div>
+ <div class="table-wrap products-table-wrap"><table><thead><tr><th>ছবি</th><th>Barcode</th><th>পণ্যের নাম</th><th>Category</th><th>Unit</th><th>Purchase</th><th>Retail Sale</th><th>Wholesale Price</th><th>Min Wholesale Qty</th><th>Stock</th><th>Stock Value</th><th>Action</th></tr></thead><tbody id="productsTable"></tbody><tfoot><tr class="total-row-blue"><th colspan="9">মোট (<span id="productsCountTotal2">0</span> টি পণ্য)</th><th id="productsStockQtyTotal">0</th><th id="productsStockTotal">৳ 0.00</th><th></th></tr></tfoot></table></div>
 </section>
 
 <section id="parties" class="page">
@@ -549,9 +648,10 @@ function softRefreshCurrentPage(){
   <div id="cloudInfo" style="margin-top:14px"></div>
   <div class="notice" style="margin-top:14px">প্রথমবার Cloud চালু করার আগে একবার Backup ডাউনলোড করে রাখুন। Free Supabase Project দীর্ঘদিন ব্যবহার না হলে Pause হতে পারে।</div>
  </div>
- <div class="section-head" style="margin-top:22px"><h2>🛟 Safety Backup History (স্থানীয়)</h2><div class="actions"><button class="btn secondary" onclick="renderSafetyBackups()">Refresh List</button></div></div>
+ <div class="section-head" style="margin-top:22px"><h2>🛟 Safety Backup History (স্থানীয়)</h2><div class="actions"><button class="btn secondary" onclick="renderSafetyBackups()">Refresh List</button><button class="btn danger" onclick="clearAllSafetyBackups()">🗑️ পুরনো Backup মুছে জায়গা খালি করুন</button></div></div>
  <div class="form-card">
-  <div class="notice">Sync/Merge করার আগে প্রতিবার এখানে স্বয়ংক্রিয়ভাবে একটি Backup Point রাখা হয় (সর্বশেষ ১০টি)। কোনো কারণে ডেটা ঠিক মনে না হলে এখান থেকে আগের যেকোনো Point-এ ফিরে যেতে পারবেন।</div>
+  <div class="notice">Sync/Merge করার আগে প্রতিবার এখানে স্বয়ংক্রিয়ভাবে একটি Backup Point রাখা হয় (সর্বশেষ ৩টি)। কোনো কারণে ডেটা ঠিক মনে না হলে এখান থেকে আগের যেকোনো Point-এ ফিরে যেতে পারবেন।</div>
+  <div class="card stat" style="margin-top:10px"><div class="label">আনুমানিক Storage ব্যবহার</div><div class="value" id="storageUsageValue">—</div><div class="sub">Browser সাধারণত ৫-১০ MB পর্যন্ত জায়গা দেয়</div></div>
   <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>সময়</th><th>কারণ</th><th>Action</th></tr></thead><tbody id="safetyBackupTable"></tbody></table></div>
  </div>
 </section>
@@ -592,20 +692,6 @@ function softRefreshCurrentPage(){
    <div class="field"><label>Invoice Design</label><select id="sInvoiceDesign"><option value="classic">Design 1 — Classic</option><option value="modern">Design 2 — Modern</option><option value="minimal">Design 3 — Minimal</option><option value="boxed">Design 4 — Boxed</option><option value="elegant">Design 5 — Elegant</option></select></div>
    <div class="field"><label>Theme Color</label><input id="sThemeColor" type="color" value="#6b57d9" style="height:44px;padding:4px"></div>
    <div class="field"><label>Theme Preset</label><select id="sThemePreset" onchange="applyThemePreset(this.value)"><option value="">নিজের Color</option><option value="#6b57d9">Purple</option><option value="#2563eb">Blue</option><option value="#059669">Green</option><option value="#dc2626">Red</option><option value="#d97706">Orange</option><option value="#7c3aed">Violet</option><option value="#0f766e">Teal</option><option value="#111827">Black</option></select></div>
-   <div class="field"><label>Sidebar / মেনু ব্যাকগ্রাউন্ড কালার</label><input id="sSidebarColor" type="color" value="#ffffff" style="height:44px;padding:4px"></div>
-  </div>
-  <h3 style="margin-top:22px">🎨 ড্যাশবোর্ড বক্স কালার (নিজের মতো এডিট করুন)</h3>
-  <div class="form-grid" style="grid-template-columns:repeat(4,1fr);gap:14px">
-   <div class="field"><label>🛒 আজকের বিক্রয়</label><input id="sBoxStat1" type="color" value="#2563eb" style="height:44px;padding:4px"></div>
-   <div class="field"><label>🛍️ আজকের ক্রয়</label><input id="sBoxStat2" type="color" value="#e5892b" style="height:44px;padding:4px"></div>
-   <div class="field"><label>🧾 মোট বাকি</label><input id="sBoxStat3" type="color" value="#df5360" style="height:44px;padding:4px"></div>
-   <div class="field"><label>📦 Stock Value</label><input id="sBoxStat4" type="color" value="#20a56a" style="height:44px;padding:4px"></div>
-   <div class="field"><label>🧾 নতুন বিক্রয় বাটন</label><input id="sBoxQ1" type="color" value="#6b57d9" style="height:44px;padding:4px"></div>
-   <div class="field"><label>🛒 নতুন ক্রয় বাটন</label><input id="sBoxQ2" type="color" value="#2563eb" style="height:44px;padding:4px"></div>
-   <div class="field"><label>📦 পণ্য যোগ বাটন</label><input id="sBoxQ3" type="color" value="#20a56a" style="height:44px;padding:4px"></div>
-   <div class="field"><label>📊 রিপোর্ট বাটন</label><input id="sBoxQ4" type="color" value="#e5892b" style="height:44px;padding:4px"></div>
-  </div>
-  <div class="actions" style="margin-top:12px"><button class="btn secondary" onclick="resetDashboardColors()">↺ Default Color-এ ফিরে যান</button></div>
   </div>
   <div style="margin-top:12px"><img id="logoPreview" style="max-width:120px;max-height:70px;border:1px solid var(--border);border-radius:8px;display:none"></div>
   <div class="field" style="margin-top:12px"><label>Invoice Footer / Terms</label><textarea id="sFooter"></textarea></div>
@@ -648,7 +734,7 @@ function softRefreshCurrentPage(){
 <input type="file" id="restoreInput" accept=".json" style="display:none">
 
 <div class="modal" id="modal"><div class="modal-box"><div class="modal-head"><h2 id="modalTitle">Entry</h2><button class="close" onclick="closeModal()">×</button></div><div id="modalBody"></div></div></div>
-<div class="modal" id="cameraScanModal" style="z-index:200"><div class="modal-box"><div class="modal-head"><h2 style="font-size:17px">📷 ক্যামেরা দিয়ে Barcode Scan</h2><button class="close" onclick="closeCameraScan()">×</button></div><div id="cameraScanReader"></div><div id="cameraScanStatus">ক্যামেরা চালু হচ্ছে...</div><button class="btn secondary" style="margin-top:12px;width:100%" onclick="closeCameraScan()">বন্ধ করুন</button></div></div>
+<div class="modal" id="cameraScanModal" style="z-index:200"><div class="modal-box"><div class="modal-head"><h2 style="font-size:17px">📷 ক্যামেরা দিয়ে Barcode Scan (একাধিক পণ্য)</h2><button class="close" onclick="closeCameraScan()">×</button></div><div id="cameraScanReader"></div><div id="cameraScanStatus">ক্যামেরা চালু হচ্ছে...</div><button class="btn secondary" style="margin-top:12px;width:100%" onclick="closeCameraScan()">✅ স্ক্যান শেষ, বন্ধ করুন</button></div></div>
 
 <script>
 // Explicit DOM references for reliable operation in all browsers
@@ -688,6 +774,10 @@ try{
     localStorage.setItem(RESET_MARK,'done');
   }
 }catch(e){ console.error('Clean start error',e); }
+// Multi-device sync fix: keep a snapshot of the last-saved state so we can tell exactly
+// which records changed on THIS device since the last save/sync (see stampChangedRecords below).
+let _lastSavedSnapshot=null;
+try{ _lastSavedSnapshot=JSON.parse(JSON.stringify(db)); }catch(e){ _lastSavedSnapshot=null; }
 function save(){
   try{
     localStorage.setItem(KEY,JSON.stringify(db));
@@ -713,7 +803,7 @@ function showPage(page, fromHistory){
  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
  document.getElementById(page).classList.add('active');
  document.querySelectorAll('.nav button[data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===page));
- const names={dashboard:'ড্যাশবোর্ড',sales:'বিক্রয়',salesList:'বিক্রয় ইনভয়েস',salesSummary:'বিক্রয় সারাংশ',purchase:'ক্রয়',products:'পণ্য ও স্টক',parties:'পার্টি',dueLedger:'বাকির হিসাব',cash:'ক্যাশ / অ্যাকাউন্ট',coa:'Chart of Accounts',expenses:'ব্যয়/খরচ',ledger:'লেজার',profitLoss:'লাভ-ক্ষতির হিসাব',balance:'ব্যালেন্স শীট',opening:'Opening Balance',reports:'রিপোর্টস',cloudSync:'☁️ Cloud Sync',salesReport:'🛒 বিক্রয় রিপোর্ট',purchaseReport:'🛍️ ক্রয় রিপোর্ট',returnReport:'↩️ রিটার্ন রিপোর্ট',users:'ইউজার ও Permission',settings:'সেটিংস',returns:'Return / Adjustment'};
+ const names={dashboard:'ড্যাশবোর্ড',sales:'বিক্রয়',salesList:'বিক্রয় ইনভয়েস',salesSummary:'বিক্রয় সারাংশ',purchase:'ক্রয়',purchaseList:'ক্রয় ইনভয়েস',purchaseSummary:'ক্রয় সারাংশ',products:'পণ্য ও স্টক',parties:'পার্টি',dueLedger:'বাকির হিসাব',cash:'ক্যাশ / অ্যাকাউন্ট',coa:'Chart of Accounts',expenses:'ব্যয়/খরচ',ledger:'লেজার',profitLoss:'লাভ-ক্ষতির হিসাব',balance:'ব্যালেন্স শীট',opening:'Opening Balance',reports:'রিপোর্টস',cloudSync:'☁️ Cloud Sync',salesReport:'🛒 বিক্রয় রিপোর্ট',purchaseReport:'🛍️ ক্রয় রিপোর্ট',returnReport:'↩️ রিটার্ন রিপোর্ট',users:'ইউজার ও Permission',settings:'সেটিংস',returns:'Return / Adjustment'};
  document.getElementById('pageTitle').textContent=names[page]||page;
  document.getElementById('sidebar').classList.remove('open');
  renderAll();
@@ -737,12 +827,28 @@ function renderDashboard(){
 function renderSales(){
  salesTable.innerHTML=biz().sales.map(x=>`<tr><td><button class="invoice-link" onclick="previewInvoice('${x.invoice}')">${esc(x.invoice)}</button></td><td>${esc(x.party)}</td><td>${x.date}</td><td>${money(x.total)}</td><td>Paid</td><td><button class="btn secondary" onclick="editInvoice('${x.invoice}')">Edit</button> <button class="btn secondary" onclick="printInvoice('${x.invoice}')">Print</button> <button class="btn danger" onclick="deleteInvoice('${x.invoice}','sale')">Delete</button></td></tr>`).join('')||'<tr><td colspan="7" class="empty">কোনো Sales নেই</td></tr>';
 }
-function renderPurchase(){
- purchaseTable.innerHTML=biz().purchases.map(x=>`<tr><td><button class="invoice-link" onclick="previewInvoice('${x.invoice}')">${esc(x.invoice)}</button></td><td>${esc(x.party)}</td><td>${x.date}</td><td>${money(x.total)}</td><td>Paid</td><td><button class="btn secondary" onclick="editInvoice('${x.invoice}')">Edit</button> <button class="btn secondary" onclick="printInvoice('${x.invoice}')">Print</button> <button class="btn danger" onclick="deleteInvoice('${x.invoice}','purchase')">Delete</button></td></tr>`).join('')||'<tr><td colspan="7" class="empty">কোনো Purchase নেই</td></tr>';
-}
+function productLowStockLimit(x){return Number(x.lowStock!=null?x.lowStock:5)}
 function renderProducts(){
  let q=(productSearch?.value||'').toLowerCase(), p=biz().products.filter(x=>(x.name+' '+x.barcode).toLowerCase().includes(q));
- productsTable.innerHTML=p.map(x=>`<tr><td>${x.image?`<img src="${x.image}" class="product-thumb">`:'<div class="product-thumb-placeholder">📦</div>'}</td><td>${esc(x.barcode)}</td><td>${esc(x.name)}</td><td>${esc(x.category)}</td><td>${esc(x.unit||'pcs')}</td><td>${money(x.buy)}</td><td>${money(x.sale)}</td><td>${money(x.wholesalePrice||x.sale)}</td><td>${x.minWholesaleQty||0}</td><td class="${x.stock<5?'low':''}">${x.stock}</td><td>${money(Number(x.buy||0)*Number(x.stock||0))}</td><td><button class="btn secondary" onclick="openProduct(${x.id})">Edit</button> <button class="btn danger" onclick="removeProduct(${x.id})">Delete</button></td></tr>`).join('')||'<tr><td colspan="12" class="empty">কোনো পণ্য নেই</td></tr>';productsPurchaseTotal.textContent=money(p.reduce((a,x)=>a+Number(x.buy||0),0));productsRetailTotal.textContent=money(p.reduce((a,x)=>a+Number(x.sale||0),0));productsWholesaleTotal.textContent=money(p.reduce((a,x)=>a+Number(x.wholesalePrice||x.sale||0),0));productsMinQtyTotal.textContent=p.reduce((a,x)=>a+Number(x.minWholesaleQty||0),0);const _pStockQty=p.reduce((a,x)=>a+Number(x.stock||0),0),_pStockVal=p.reduce((a,x)=>a+Number(x.buy||0)*Number(x.stock||0),0);productsStockQtyTotal.textContent=_pStockQty;productsStockTotal.textContent=money(_pStockVal);if(document.getElementById('productsCountTotal'))productsCountTotal.textContent=p.length;if(document.getElementById('productsCountTotal2'))productsCountTotal2.textContent=p.length;if(document.getElementById('productsStockQtyCard'))productsStockQtyCard.textContent=_pStockQty;if(document.getElementById('productsStockValueCard'))productsStockValueCard.textContent=money(_pStockVal);
+ productsTable.innerHTML=p.map(x=>`<tr><td>${x.image?`<img src="${x.image}" class="product-thumb">`:'<div class="product-thumb-placeholder">📦</div>'}</td><td>${esc(x.barcode)}</td><td>${esc(x.name)}</td><td>${esc(x.category)}</td><td>${esc(x.unit||'pcs')}</td><td>${money(x.buy)}</td><td>${money(x.sale)}</td><td>${money(x.wholesalePrice||x.sale)}</td><td>${x.minWholesaleQty||0}</td><td class="${Number(x.stock||0)<=productLowStockLimit(x)?'low':''}">${x.stock}</td><td>${money(Number(x.buy||0)*Number(x.stock||0))}</td><td><button class="btn secondary" onclick="openProduct(${x.id})">Edit</button> <button class="btn danger" onclick="removeProduct(${x.id})">Delete</button></td></tr>`).join('')||'<tr><td colspan="12" class="empty">কোনো পণ্য নেই</td></tr>';
+ const _pStockQty=p.reduce((a,x)=>a+Number(x.stock||0),0),_pStockVal=p.reduce((a,x)=>a+Number(x.buy||0)*Number(x.stock||0),0);
+ if(document.getElementById('productsStockQtyTotal'))productsStockQtyTotal.textContent=_pStockQty;
+ if(document.getElementById('productsStockTotal'))productsStockTotal.textContent=money(_pStockVal);
+ if(document.getElementById('productsCountTotal'))productsCountTotal.textContent=p.length;
+ if(document.getElementById('productsCountTotal2'))productsCountTotal2.textContent=p.length;
+ if(document.getElementById('productsStockQtyCard'))productsStockQtyCard.textContent=_pStockQty;
+ if(document.getElementById('productsStockValueCard'))productsStockValueCard.textContent=money(_pStockVal);
+ renderLowStockAlerts();
+}
+function lowStockProducts(){
+ return biz().products.filter(x=>Number(x.stock||0)<=productLowStockLimit(x)).sort((a,b)=>Number(a.stock||0)-Number(b.stock||0));
+}
+function renderLowStockAlerts(){
+ const list=lowStockProducts();
+ if(document.getElementById('dLowStock'))dLowStock.textContent=list.length;
+ const html=list.length?(`<div class="notice warn"><b>⚠️ লো স্টক এলার্ম:</b> ${list.length}টি পণ্যের স্টক Alert সীমার নিচে নেমে গেছে। দ্রুত নতুন ক্রয় করুন।</div>`
+   +`<div class="low-stock-list">${list.map(x=>`<div class="low-stock-item"><div><b>${esc(x.name)}</b><br><small>Barcode: ${esc(x.barcode||'—')} · Alert সীমা: ${productLowStockLimit(x)} ${esc(x.unit||'pcs')}</small></div><div style="text-align:right"><span class="low" style="font-size:17px">${x.stock} ${esc(x.unit||'pcs')}</span><br><button class="btn secondary" onclick="openProduct(${x.id})">স্টক আপডেট</button></div></div>`).join('')}</div>`) : '';
+ ['lowStockDashboardBox','lowStockProductsBox'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=html;});
 }
 function partyDueAmount(b,x){
   const opening=Number(x.balance||0);
@@ -925,11 +1031,6 @@ function renderUsers(){usersTable.innerHTML=biz().users.map(x=>`<tr><td>${esc(x.
 function renderSettings(){
  let b=biz();sName.value=b.name;sPhone.value=b.phone;sEmail.value=b.email;sAddress.value=b.address;sCurrency.value=b.currency;sPrefix.value=b.prefix;sFooter.value=b.footer;
  if(sPaper)sPaper.value=b.paper||'80mm'; if(sPrinter)sPrinter.value=b.printer||''; if(sPrintLogo)sPrintLogo.value=b.printLogo||'yes'; if(sInvoiceDesign)sInvoiceDesign.value=b.invoiceDesign||'classic'; if(sThemeColor)sThemeColor.value=b.themeColor||'#6b57d9';
- {let dc=b.dashboardColors||{};
-  if(sSidebarColor)sSidebarColor.value=b.sidebarColor||'#ffffff';
-  if(sBoxStat1)sBoxStat1.value=dc.stat1||'#2563eb'; if(sBoxStat2)sBoxStat2.value=dc.stat2||'#e5892b'; if(sBoxStat3)sBoxStat3.value=dc.stat3||'#df5360'; if(sBoxStat4)sBoxStat4.value=dc.stat4||'#20a56a';
-  if(sBoxQ1)sBoxQ1.value=dc.q1||'#6b57d9'; if(sBoxQ2)sBoxQ2.value=dc.q2||'#2563eb'; if(sBoxQ3)sBoxQ3.value=dc.q3||'#20a56a'; if(sBoxQ4)sBoxQ4.value=dc.q4||'#e5892b';
- }
  if(b.logo){logoPreview.src=b.logo;logoPreview.style.display='block'}else{logoPreview.style.display='none'}
  businessTable.innerHTML=db.businesses.map((x,i)=>`<tr><td>${esc(x.name)}</td><td>${esc(x.phone)}</td><td>${x.products.length}</td><td>${x.sales.length}</td><td><button class="btn secondary" onclick="selectBusiness(${i})">Open</button> <button class="btn danger" onclick="deleteBusinessAccount(${i})" ${db.businesses.length<=1?'disabled':''}>Delete</button></td></tr>`).join('');
 }
@@ -995,11 +1096,11 @@ function ensureBusinessData(){
  });
 }
 function currentPermissions(){let u=currentUser;if(!u)return [];if(!Array.isArray(u.permissions)){let r=u.role||'Cashier';return r==='Admin'?['*']:[];}return u.permissions}
-function can(page){let ps=currentPermissions();return ps.includes('*')||ps.includes(page)}
+function can(page){let ps=currentPermissions();let p=(page==='purchaseList'||page==='purchaseSummary')?'purchase':(page==='salesSummary'?'sales':page);return ps.includes('*')||ps.includes(p)}
 function requirePerm(page){if(!can(page)){alert('এই User-এর এই কাজের Permission নেই।');return false}return true}
 function accountById(idv){return biz().accounts.find(a=>String(a.id)===String(idv))||biz().accounts[0]}
 function accountBalance(aid){let b=biz(),a=accountById(aid),bal=+(a?.opening||0);b.cash.filter(x=>String(x.accountId||'cash')===String(a.id)).forEach(x=>bal+=(x.type==='In'?1:-1)*Number(x.amount||0));b.sales.filter(x=>String(x.paymentAccount||'cash')===String(a.id)).forEach(x=>bal+=Number(x.paid!=null?x.paid:x.total||0));b.purchases.filter(x=>String(x.paymentAccount||'cash')===String(a.id)).forEach(x=>bal-=Number(x.paid!=null?x.paid:x.total||0));return bal}
-function renderAccounts(){let b=biz();if(document.getElementById('posAccount'))document.getElementById('posAccount').innerHTML=b.accounts.map(a=>`<option value=\"${a.id}\">${esc(a.name)}</option>`).join('');if(!accountsTable)return;accountsTable.innerHTML=b.accounts.map(a=>{let ins=b.cash.filter(x=>String(x.accountId||'cash')===String(a.id)&&x.type==='In').reduce((n,x)=>n+Number(x.amount||0),0)+b.sales.filter(x=>String(x.paymentAccount||'cash')===String(a.id)).reduce((n,x)=>n+Number(x.paid!=null?x.paid:x.total||0),0);let outs=b.cash.filter(x=>String(x.accountId||'cash')===String(a.id)&&x.type==='Out').reduce((n,x)=>n+Number(x.amount||0),0)+b.purchases.filter(x=>String(x.paymentAccount||'cash')===String(a.id)).reduce((n,x)=>n+Number(x.paid!=null?x.paid:x.total||0),0);return `<tr><td><b>${esc(a.name)}</b></td><td>${esc(a.type||'Other')}</td><td>${money(a.opening)}</td><td>${money(ins)}</td><td>${money(outs)}</td><td><b>${money(accountBalance(a.id))}</b></td></tr>`}).join('')}
+function renderAccounts(){let b=biz();if(document.getElementById('posAccount'))document.getElementById('posAccount').innerHTML=b.accounts.map(a=>`<option value=\"${a.id}\">${esc(a.name)}</option>`).join('');if(document.getElementById('purAccount'))document.getElementById('purAccount').innerHTML=b.accounts.map(a=>`<option value=\"${a.id}\">${esc(a.name)}</option>`).join('');if(!accountsTable)return;accountsTable.innerHTML=b.accounts.map(a=>{let ins=b.cash.filter(x=>String(x.accountId||'cash')===String(a.id)&&x.type==='In').reduce((n,x)=>n+Number(x.amount||0),0)+b.sales.filter(x=>String(x.paymentAccount||'cash')===String(a.id)).reduce((n,x)=>n+Number(x.paid!=null?x.paid:x.total||0),0);let outs=b.cash.filter(x=>String(x.accountId||'cash')===String(a.id)&&x.type==='Out').reduce((n,x)=>n+Number(x.amount||0),0)+b.purchases.filter(x=>String(x.paymentAccount||'cash')===String(a.id)).reduce((n,x)=>n+Number(x.paid!=null?x.paid:x.total||0),0);return `<tr><td><b>${esc(a.name)}</b></td><td>${esc(a.type||'Other')}</td><td>${money(a.opening)}</td><td>${money(ins)}</td><td>${money(outs)}</td><td><b>${money(accountBalance(a.id))}</b></td></tr>`}).join('')}
 function openAccount(aid){if(!requirePerm('coa')&&!requirePerm('cash'))return;let a=aid?biz().accounts.find(x=>String(x.id)===String(aid)):{id:0,name:'',type:'Cash',category:'Asset',opening:0};modalTitle.textContent=aid?'Account Edit':'নতুন Account';modalBody.innerHTML=`<div class="form-grid"><div class="field"><label>Account Name</label><input id="aName" value="${esc(a.name)}"></div><div class="field"><label>Account Type</label><select id="aType"><option value="Cash" ${a.type==='Cash'?'selected':''}>Cash</option><option value="Bank" ${a.type==='Bank'?'selected':''}>Bank</option><option value="Mobile Wallet" ${a.type==='Mobile Wallet'?'selected':''}>Mobile Wallet</option><option value="Other" ${a.type==='Other'?'selected':''}>Other</option></select></div><div class="field"><label>Accounting Category</label><select id="aCategory"><option value="Asset" ${(a.category||'Asset')==='Asset'?'selected':''}>Asset</option><option value="Liability" ${a.category==='Liability'?'selected':''}>Liability</option><option value="Equity" ${a.category==='Equity'?'selected':''}>Equity</option><option value="Revenue" ${a.category==='Revenue'?'selected':''}>Revenue</option><option value="Expense" ${a.category==='Expense'?'selected':''}>Expense</option><option value="COGS" ${a.category==='COGS'?'selected':''}>Cost of Sales</option></select></div><div class="field"><label>Opening Balance</label><input id="aOpening" type="number" value="${a.opening||0}"></div></div><div style="margin-top:18px"><button class="btn" onclick="saveAccount(${a.id?`'${a.id}'`:'0'})">Save</button></div>`;modal.classList.add('show')}
 function saveAccount(aid){if(!requirePerm('coa')&&!requirePerm('cash'))return;let b=biz(),name=aName.value.trim();if(!name){alert('Account Name দিন।');return}if(aid&&aid!=='0'){let a=b.accounts.find(x=>String(x.id)===String(aid));if(a)Object.assign(a,{name,type:aType.value,category:aCategory.value,opening:+aOpening.value||0})}else b.accounts.push({id:'acc_'+id(),name,type:aType.value,category:aCategory.value,opening:+aOpening.value||0});closeModal();save()}
 function openTransfer(){if(!requirePerm('cash'))return;let b=biz();if(b.accounts.length<2){alert('Transfer করতে কমপক্ষে ২টি Account তৈরি করুন।');return}modalTitle.textContent='Account Transfer';modalBody.innerHTML=`<div class="form-grid"><div class="field"><label>From Account</label><select id="tFrom">${b.accounts.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('')}</select></div><div class="field"><label>To Account</label><select id="tTo">${b.accounts.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('')}</select></div><div class="field"><label>Amount</label><input id="tAmount" type="number" min="0"></div><div class="field"><label>Date</label><input id="tDate" type="date" value="${today()}"></div><div class="field"><label>Note</label><input id="tNote" value="Account Transfer"></div></div><div style="margin-top:18px"><button class="btn" onclick="saveTransfer()">Transfer</button></div>`;modal.classList.add('show')}
@@ -1012,7 +1113,7 @@ function login(){currentUser=getUsersAll().find(u=>u.username==='admin')||getUse
 function logout(){currentUser=getUsersAll().find(u=>u.username==='admin')||getUsersAll()[0]||null;loginScreen.style.display='none';updateProfileUI();}
 function restoreLogin(){const session=authRead();currentUser=getUsersAll().find(u=>u.username===(session&&session.username||'admin'))||getUsersAll().find(u=>u.username==='admin')||getUsersAll()[0]||null;if(currentUser){const bi=Number(session&&session.businessIndex);if(Number.isInteger(bi)&&bi>=0&&bi<db.businesses.length){db.currentBusiness=bi;}else if(Number.isInteger(currentUser.businessIndex)&&currentUser.businessIndex>=0&&currentUser.businessIndex<db.businesses.length){db.currentBusiness=currentUser.businessIndex;}ensureBusinessData();}loginScreen.style.display='none';return true;}
 function updateProfileUI(){let u=currentUser||{name:'Admin',username:'admin',role:'Admin'},b=biz();document.getElementById('profileName').textContent=u.name||u.username;document.getElementById('profilePhone').textContent=b.name||'Business Account';document.getElementById('profileAvatar').textContent=(u.name||u.username||'A').charAt(0).toUpperCase()}
-function renderAll(){renderBusinessSelect();renderDashboard();renderSales();renderPurchase();renderProducts();renderParties();renderCash();renderExpenses();renderAccounts();renderReports();renderUsers();renderSettings();populateLedgerParties();renderLedger();renderBalance();renderOpening();renderTrialBalance();renderDayBook();renderSalesQuick();renderSalesList();renderSalesSummary();if(document.getElementById('posProductResults'))renderPOSProducts();renderPOSItems();posRecalc();renderCloudStatus()}
+function renderAll(){renderBusinessSelect();renderDashboard();renderSales();renderProducts();renderParties();renderCash();renderExpenses();renderAccounts();renderReports();renderUsers();renderSettings();populateLedgerParties();renderLedger();renderBalance();renderOpening();renderTrialBalance();renderDayBook();renderSalesQuick();renderSalesList();renderSalesSummary();if(document.getElementById('posProductResults'))renderPOSProducts();renderPOSItems();posRecalc();if(typeof renderPurchaseList==='function')renderPurchaseList();if(typeof renderPurchaseSummary==='function')renderPurchaseSummary();if(document.getElementById('purchaseProductResults')&&typeof renderPurchaseProducts==='function')renderPurchaseProducts();if(typeof renderPurchasePOSItems==='function')renderPurchasePOSItems();if(typeof purchasePOSRecalc==='function')purchasePOSRecalc();renderLowStockAlerts();renderCloudStatus()}
 
 function ensureProductOptions(){
   let b=biz();
@@ -1035,7 +1136,7 @@ function addProductOption(type){
   save();
 }
 function openProduct(pid){if(!requirePerm('products'))return;
- let p=pid?biz().products.find(x=>x.id===pid):{id:0,barcode:'',name:'',category:'',unit:'pcs',buy:0,sale:0,wholesalePrice:0,minWholesaleQty:0,stock:0,image:''};
+ let p=pid?biz().products.find(x=>x.id===pid):{id:0,barcode:'',name:'',category:'',unit:'pcs',buy:0,sale:0,wholesalePrice:0,minWholesaleQty:0,stock:0,lowStock:5,image:''};
  modalTitle.textContent=pid?'পণ্য Edit':'নতুন পণ্য';
  modalBody.innerHTML=`<div class="form-grid">
  <div class="field"><label>Barcode</label><input id="fBarcode" value="${esc(p.barcode)}"></div>
@@ -1047,22 +1148,56 @@ function openProduct(pid){if(!requirePerm('products'))return;
  <div class="field"><label>Wholesale Price</label><input id="fWholesale" type="number" min="0" value="${p.wholesalePrice||p.sale||0}"></div>
  <div class="field"><label>Minimum Wholesale Qty</label><input id="fMinWholesaleQty" type="number" min="0" step="0.01" value="${p.minWholesaleQty||0}"></div>
  <div class="field"><label>Stock</label><input id="fStock" type="number" min="0" step="0.01" value="${p.stock}"></div>
+ <div class="field"><label>⚠️ লো স্টক এলার্ম (Alert Qty)</label><input id="fLowStock" type="number" min="0" step="0.01" value="${p.lowStock!=null?p.lowStock:5}"></div>
  <div class="field"><label>পণ্যের ছবি</label><input id="fImageFile" type="file" accept="image/*" onchange="previewProductImage(this)"><input type="hidden" id="fImageData" value="${esc(p.image||'')}"><img id="fImagePreview" class="product-image-preview" src="${esc(p.image||'')}" style="display:${p.image?'block':'none'}"></div></div>
  <div style="margin-top:18px"><button class="btn" onclick="saveProduct(${p.id||0})">Save</button></div>`;
  modal.classList.add('show');
 }
+/* Storage-quota fix: phone camera photos are often 3-8MB each; storing them raw in localStorage
+   (which browsers usually cap around 5-10MB TOTAL per site) fills it up after just a few products.
+   This resizes+re-encodes any uploaded image to a small JPEG before it's ever stored. */
+function compressImageFile(file,maxDim,quality){
+ return new Promise((resolve,reject)=>{
+  try{
+   const reader=new FileReader();
+   reader.onerror=()=>reject(reader.error||new Error('File read failed'));
+   reader.onload=function(e){
+    const img=new Image();
+    img.onerror=()=>reject(new Error('Image decode failed'));
+    img.onload=function(){
+     try{
+      let w=img.width,h=img.height;
+      const scale=Math.min(1,(maxDim||700)/Math.max(w,h));
+      w=Math.max(1,Math.round(w*scale)); h=Math.max(1,Math.round(h*scale));
+      const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+      const ctx=canvas.getContext('2d'); ctx.drawImage(img,0,0,w,h);
+      resolve(canvas.toDataURL('image/jpeg',quality||0.6));
+     }catch(err){ reject(err); }
+    };
+    img.src=e.target.result;
+   };
+   reader.readAsDataURL(file);
+  }catch(err){ reject(err); }
+ });
+}
 function previewProductImage(el){
  const f=el.files&&el.files[0];if(!f)return;
- const reader=new FileReader();
- reader.onload=function(e){
-  const data=e.target.result;
+ compressImageFile(f,700,0.6).then(data=>{
   const hidden=document.getElementById('fImageData');if(hidden)hidden.value=data;
   const img=document.getElementById('fImagePreview');if(img){img.src=data;img.style.display='block'}
- };
- reader.readAsDataURL(f);
+ }).catch(err=>{
+  console.error('Image compress failed, falling back to raw file',err);
+  const reader=new FileReader();
+  reader.onload=function(e){
+   const data=e.target.result;
+   const hidden=document.getElementById('fImageData');if(hidden)hidden.value=data;
+   const img=document.getElementById('fImagePreview');if(img){img.src=data;img.style.display='block'}
+  };
+  reader.readAsDataURL(f);
+ });
 }
 function saveProduct(pid){
- let b=biz(),o={id:pid||id(),barcode:fBarcode.value,name:fName.value,category:fCat.value,unit:fUnit.value||'pcs',buy:+fBuy.value||0,sale:+fSale.value||0,wholesalePrice:+fWholesale.value||(+fSale.value||0),minWholesaleQty:+fMinWholesaleQty.value||0,stock:+fStock.value||0,image:(document.getElementById('fImageData')?.value)||''};
+ let b=biz(),o={id:pid||id(),barcode:fBarcode.value,name:fName.value,category:fCat.value,unit:fUnit.value||'pcs',buy:+fBuy.value||0,sale:+fSale.value||0,wholesalePrice:+fWholesale.value||(+fSale.value||0),minWholesaleQty:+fMinWholesaleQty.value||0,stock:+fStock.value||0,lowStock:document.getElementById('fLowStock')?(+document.getElementById('fLowStock').value||0):5,image:(document.getElementById('fImageData')?.value)||''};
  if(pid){let i=b.products.findIndex(x=>x.id===pid);b.products[i]=o}else b.products.push(o);closeModal();save()
 }
 function removeProduct(pid){if(confirm('পণ্যটি মুছে ফেলবেন?')){biz().products=biz().products.filter(x=>x.id!==pid);save()}}
@@ -1152,7 +1287,12 @@ function saveOpening(){
  let n=Math.abs(+oBalance.value||0); p.balance=oType.value==='due'?n:-n; closeModal();save();alert('Opening Balance Save হয়েছে।');
 }
 function previewLogo(input){
- let f=input.files[0]; if(!f)return; let r=new FileReader(); r.onload=()=>{biz().logo=r.result;logoPreview.src=r.result;logoPreview.style.display='block'}; r.readAsDataURL(f);
+ let f=input.files[0]; if(!f)return;
+ compressImageFile(f,400,0.7).then(data=>{ biz().logo=data; logoPreview.src=data; logoPreview.style.display='block'; })
+ .catch(err=>{
+  console.error('Logo compress failed, falling back to raw file',err);
+  let r=new FileReader(); r.onload=()=>{biz().logo=r.result;logoPreview.src=r.result;logoPreview.style.display='block'}; r.readAsDataURL(f);
+ });
 }
 
 
@@ -1452,14 +1592,40 @@ function pushSafetyBackup(reason){
   try{
     let arr=listSafetyBackups();
     arr.unshift({at:new Date().toISOString(),reason:reason||'sync',data:JSON.parse(JSON.stringify(db))});
-    arr=arr.slice(0,10);
+    // Storage-quota fix: each backup duplicates the ENTIRE database (product photos, logo, everything).
+    // Keeping 10 full copies was the main reason 'setItem quota exceeded' errors were happening.
+    // 3 recent copies is still enough to recover from a bad sync, but far lighter on storage.
+    arr=arr.slice(0,3);
     localStorage.setItem(SAFETY_BACKUP_KEY,JSON.stringify(arr));
-  }catch(e){console.error('Safety backup failed',e)}
+  }catch(e){
+    console.error('Safety backup failed',e);
+    // If even the backup itself can't be written (storage already full), don't let that block
+    // the actual save the user is trying to do — just skip taking a backup this time.
+  }
+}
+function clearAllSafetyBackups(){
+  if(!confirm('সব পুরনো Safety Backup মুছে ফেলবেন? এতে জায়গা খালি হবে, কিন্তু আগের কোনো Backup Point-এ আর ফেরা যাবে না। (আপনার আসল Product/Sales/Purchase ডেটা মুছবে না, শুধু Backup History মুছবে।)'))return;
+  try{
+    localStorage.removeItem(SAFETY_BACKUP_KEY);
+    renderSafetyBackups();
+    renderStorageUsage();
+    alert('✅ পুরনো Backup মুছে ফেলা হয়েছে। এখন আবার Save/Sync চেষ্টা করুন।');
+  }catch(e){ alert('Backup মুছতে সমস্যা হয়েছে: '+(e.message||e)); }
+}
+function renderStorageUsage(){
+  const el=document.getElementById('storageUsageValue'); if(!el)return;
+  try{
+    let bytes=0;
+    for(const k in localStorage){ if(Object.prototype.hasOwnProperty.call(localStorage,k)) bytes+=(localStorage[k]||'').length+k.length; }
+    const mb=bytes/1024/1024;
+    el.textContent=mb.toFixed(2)+' MB';
+  }catch(e){ el.textContent='—'; }
 }
 function renderSafetyBackups(){
   const tb=document.getElementById('safetyBackupTable');if(!tb)return;
   const arr=listSafetyBackups();
   tb.innerHTML=arr.map((b,i)=>`<tr><td>${new Date(b.at).toLocaleString()}</td><td>${esc(b.reason)}</td><td><button class="btn secondary" onclick="restoreSafetyBackup(${i})">এই Point-এ ফিরুন</button></td></tr>`).join('')||'<tr><td colspan="3" class="empty">এখনো কোনো Safety Backup তৈরি হয়নি</td></tr>';
+  renderStorageUsage();
 }
 function restoreSafetyBackup(i){
   const arr=listSafetyBackups(), b=arr[i];
@@ -1473,13 +1639,53 @@ function restoreSafetyBackup(i){
   alert('✅ Backup থেকে ডেটা ফিরিয়ে আনা হয়েছে।');
 }
 
-/* ===== Non-destructive Merge: union by id, never deletes local-only or remote-only records ===== */
+/* ===== Non-destructive Merge: union by id, never deletes local-only or remote-only records =====
+   Fix (report/stock mismatch across devices): on an id-collision we used to ALWAYS keep the
+   local copy, even if the remote copy was actually the newer edit (e.g. a purchase/stock update
+   made on the other device). That silently discarded newer changes and caused Stock Value /
+   reports to differ between devices. Now we compare each record's updatedAt timestamp and keep
+   whichever side is actually newer; only fall back to "keep local" when there's a tie or neither
+   side has a timestamp yet (older data saved before this fix), so old behavior is preserved there. */
 function mergeArraysById(localArr,remoteArr){
   localArr=Array.isArray(localArr)?localArr:[]; remoteArr=Array.isArray(remoteArr)?remoteArr:[];
   const map=new Map();
   remoteArr.forEach(item=>{ if(item&&item.id!=null) map.set(item.id,item); });
-  localArr.forEach(item=>{ if(item&&item.id!=null) map.set(item.id,item); }); // local wins only on exact id-collision; nothing is ever dropped
+  localArr.forEach(item=>{
+    if(!item||item.id==null)return;
+    const existing=map.get(item.id);
+    if(!existing){ map.set(item.id,item); return; } // local-only record: nothing is ever dropped
+    const localT=Number(item.updatedAt)||0, remoteT=Number(existing.updatedAt)||0;
+    if(localT>=remoteT) map.set(item.id,item); // newer (or tied/untimestamped) local copy wins
+    // else: remote copy is genuinely newer, so it stays in the map untouched
+  });
   return Array.from(map.values());
+}
+/* Stamp updatedAt=now on any record that actually changed since the last save, by diffing
+   against the snapshot captured after the previous save/sync. This is what makes the
+   timestamp-aware merge above possible, without having to hunt down every single place in the
+   app that edits stock, products, sales, purchases, etc. */
+function stampChangedRecords(){
+  try{
+    const prev=_lastSavedSnapshot;
+    (db.businesses||[]).forEach((bz,bi)=>{
+      if(!bz)return;
+      const prevBiz=(prev&&Array.isArray(prev.businesses))?prev.businesses[bi]:null;
+      CLOUD_ARRAY_KEYS.forEach(k=>{
+        const arr=bz[k]; if(!Array.isArray(arr))return;
+        const prevArr=(prevBiz&&Array.isArray(prevBiz[k]))?prevBiz[k]:[];
+        const prevMap=new Map();
+        prevArr.forEach(r=>{ if(r&&r.id!=null) prevMap.set(r.id,r); });
+        arr.forEach(rec=>{
+          if(!rec||rec.id==null)return;
+          const old=prevMap.get(rec.id);
+          const curCopy={...rec}; delete curCopy.updatedAt;
+          let changed=true;
+          if(old){ const oldCopy={...old}; delete oldCopy.updatedAt; changed=JSON.stringify(curCopy)!==JSON.stringify(oldCopy); }
+          if(changed) rec.updatedAt=Date.now();
+        });
+      });
+    });
+  }catch(e){ console.error('stampChangedRecords error',e); }
 }
 function mergeStringArrays(localArr,remoteArr){
   return Array.from(new Set([...(Array.isArray(localArr)?localArr:[]),...(Array.isArray(remoteArr)?remoteArr:[])]));
@@ -1564,6 +1770,7 @@ async function cloudPull(){
     pushSafetyBackup('Cloud থেকে Merge করার আগে');
     db=mergeDB(db,row.state);
     localStorage.setItem(KEY,JSON.stringify(db));
+    try{_lastSavedSnapshot=JSON.parse(JSON.stringify(db))}catch(e){}
     setCloudMeta({lastServerAt:row.updated_at,lastSync:new Date().toISOString(),dirty:false});
     try{renderAll()}catch(e){}
     renderCloudStatus();
@@ -1580,6 +1787,7 @@ async function cloudPush(){
       pushSafetyBackup('Cloud-এ Upload করার আগে Merge');
       db=mergeDB(db,row.state);
       localStorage.setItem(KEY,JSON.stringify(db));
+      try{_lastSavedSnapshot=JSON.parse(JSON.stringify(db))}catch(e){}
       try{renderAll()}catch(e){}
     }
     const now=new Date().toISOString();
@@ -1607,7 +1815,16 @@ function scheduleCloudPush(){
   cloudPushTimer=setTimeout(()=>{ if(navigator.onLine&&!cloudSyncBusy) cloudPush(); },1200);
   renderCloudStatus();
 }
-const _v26OriginalSave=save;save=function(){const ok=_v26OriginalSave();if(ok){try{renderAll()}catch(e){console.error('Refresh after save failed',e)}scheduleCloudPush();}return ok};
+const _v26OriginalSave=save;save=function(){
+  try{stampChangedRecords()}catch(e){console.error('stampChangedRecords call failed',e)}
+  const ok=_v26OriginalSave();
+  if(ok){
+    try{renderAll()}catch(e){console.error('Refresh after save failed',e)}
+    scheduleCloudPush();
+    try{_lastSavedSnapshot=JSON.parse(JSON.stringify(db))}catch(e){}
+  }
+  return ok;
+};
 /* Coming back online: if this device has unsynced (dirty) changes, PUSH them (fixes the old bug where offline sales just sat unsynced); otherwise pull-merge any new cloud data. */
 window.addEventListener('online',()=>{
   renderCloudStatus();
@@ -1672,7 +1889,7 @@ function previewInvoice(invoice){
  let logo=(b.printLogo||'yes')==='yes'&&b.logo?`<img class="ip-logo" src="${b.logo}">`:'';
  let customer=esc(x.party||'Cash Sale');
  modalTitle.textContent='ইনভয়েস প্রিভিউ';
- modalBody.innerHTML=`<div class="invoice-preview-toolbar"><div><b>🧾 ${esc(x.invoice)}</b><span class="badge" style="margin-left:8px">${x.type==='purchase'?'ক্রয়':'বিক্রয়'}</span></div><div class="actions"><button class="btn secondary" onclick="closeModal()">← বন্ধ</button><button class="btn" onclick="printInvoice('${x.invoice}')">🖨️ Print</button></div></div><div class="invoice-preview-paper design-${design}" style="--ip-accent:${accent};--ip-soft:${soft}"><div class="ip-head"><div class="ip-brand">${logo}<div><h2 style="margin:0 0 4px">${esc(b.name)}</h2><div>${esc(b.address||'')}</div><div>${esc(b.phone||'')}</div><div>${esc(b.email||'')}</div></div></div><div style="text-align:right"><div class="ip-title">${x.type==='purchase'?'ক্রয়':'ইনভয়েস'}</div><div>Invoice: <b>${esc(x.invoice)}</b></div><div>তারিখ: ${esc(x.date)}</div></div></div><div class="ip-meta"><b>কাস্টমার / পার্টি:</b> ${customer}</div><table><thead><tr><th>ক্রম</th><th>পণ্যের নাম</th><th>Barcode</th><th>একক</th><th>পরিমাণ</th><th>দর</th><th>মোট</th></tr></thead><tbody>${rows}</tbody></table><div class="ip-summary"><div>সাব টোটাল: <b>${money(x.total)}</b></div><div>ডিসকাউন্ট: <b>${money(0)}</b></div><div>Paid: <b>${money(x.paid||x.total)}</b></div><div>Due: <b>${money(0)}</b></div><div class="ip-grand">সর্বমোট: ${money(x.total)}</div></div><div class="ip-footer">${esc(b.footer||'ধন্যবাদ। আবার আসবেন।')}</div></div>`;
+ modalBody.innerHTML=`<div class="invoice-preview-toolbar"><div><b>🧾 ${esc(x.invoice)}</b><span class="badge" style="margin-left:8px">${x.type==='purchase'?'ক্রয়':'বিক্রয়'}</span></div><div class="actions"><button class="btn secondary" onclick="closeModal()">← বন্ধ</button><button class="btn" onclick="printInvoice('${x.invoice}')">🖨️ Print</button></div></div><div class="invoice-preview-paper design-${design}" style="--ip-accent:${accent};--ip-soft:${soft}"><div class="ip-head"><div class="ip-brand">${logo}<div><h2 style="margin:0 0 4px">${esc(b.name)}</h2><div>${esc(b.address||'')}</div><div>${esc(b.phone||'')}</div><div>${esc(b.email||'')}</div></div></div><div style="text-align:right"><div class="ip-title">${x.type==='purchase'?'ক্রয়':'ইনভয়েস'}</div><div>Invoice: <b>${esc(x.invoice)}</b></div><div>তারিখ: ${esc(x.date)}</div></div></div><div class="ip-meta"><b>কাস্টমার / পার্টি:</b> ${customer}</div><table><thead><tr><th>ক্রম</th><th>পণ্যের নাম</th><th>Barcode</th><th>একক</th><th>পরিমাণ</th><th>দর</th><th>মোট</th></tr></thead><tbody>${rows}</tbody></table><div class="ip-summary"><div>সাব টোটাল: <b>${money(x.total)}</b></div><div>ডিসকাউন্ট: <b>${money(0)}</b></div><div>Paid: <b>${money(x.paid!=null?x.paid:x.total)}</b></div><div>Due: <b>${money(x.due||0)}</b></div><div class="ip-grand">সর্বমোট: ${money(x.total)}</div></div><div class="ip-footer">${esc(b.footer||'ধন্যবাদ। আবার আসবেন।')}</div></div>`;
  modal.classList.add('show','invoice-preview-modal');
 }
 
@@ -1690,12 +1907,12 @@ function printInvoice(invoice){
   elegant:`body{font-family:Georgia,serif}.head{border-bottom:1px solid ${accent};padding-bottom:9px}.head h2{font-family:Georgia,serif;font-size:${paper==='A4'?'22px':'15px'}}h1{color:${accent};font-weight:normal}th{color:${accent};border-bottom:1px solid ${accent}}.total{color:${accent}}.footer{font-style:italic}`
  }[design]||'';
  let w=window.open('','_blank'); if(!w){alert('Popup Blocked হয়েছে। Browser-এ popup allow করুন।');return}
- w.document.write(`<html><head><title>${esc(x.invoice)}</title><style>@page{size:${paper==='A4'?'A4':'auto'};margin:${paper==='A4'?'12mm':'3mm'}}*{box-sizing:border-box}body{font-family:Arial,sans-serif;width:${width};margin:0 auto;padding:${paper==='A4'?'8mm':'2mm'};font-size:${paper==='A4'?'12px':'10px'}}.head{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:6px}.logo{max-width:${paper==='A4'?'100px':'55px'};max-height:55px;object-fit:contain}h2{margin:2px 0;font-size:${paper==='A4'?'20px':'14px'}}h1{font-size:${paper==='A4'?'22px':'14px'};margin:4px 0}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{padding:4px 2px;text-align:left;word-break:break-word}th{font-size:9px}td{font-size:9px}.total{text-align:right;font-weight:bold;margin-top:8px}.footer{border-top:1px dashed #999;margin-top:10px;padding-top:6px;text-align:center;font-size:9px}@media print{body{width:${width}}}${dcss}</style></head><body><div class="head"><div>${logo}<h2>${esc(b.name)}</h2><div>${esc(b.address||'')}</div><div>${esc(b.phone||'')}</div><div>${esc(b.email||'')}</div></div><h1>${x.type==='purchase'?'ক্রয়':'ইনভয়েস'}</h1></div><div class="meta">Invoice: ${esc(x.invoice)} &nbsp; | &nbsp; Date: ${esc(x.date)} &nbsp; | &nbsp; Party: ${esc(x.party||'Cash Sale')}</div><table><tr><th>পণ্য</th><th>Barcode</th><th>Qty</th><th>Price</th><th>Total</th></tr>${rows}</table><div class="total">Total: ${money(x.total)}<br>Paid: ${money(x.paid||x.total)}<br>Due: ${money(0)}</div><div class="footer">${esc(b.footer||'ধন্যবাদ। আবার আসবেন।')}</div></body></html>`);
+ w.document.write(`<html><head><title>${esc(x.invoice)}</title><style>@page{size:${paper==='A4'?'A4':'auto'};margin:${paper==='A4'?'12mm':'3mm'}}*{box-sizing:border-box}body{font-family:Arial,sans-serif;width:${width};margin:0 auto;padding:${paper==='A4'?'8mm':'2mm'};font-size:${paper==='A4'?'12px':'10px'}}.head{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:6px}.logo{max-width:${paper==='A4'?'100px':'55px'};max-height:55px;object-fit:contain}h2{margin:2px 0;font-size:${paper==='A4'?'20px':'14px'}}h1{font-size:${paper==='A4'?'22px':'14px'};margin:4px 0}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{padding:4px 2px;text-align:left;word-break:break-word}th{font-size:9px}td{font-size:9px}.total{text-align:right;font-weight:bold;margin-top:8px}.footer{border-top:1px dashed #999;margin-top:10px;padding-top:6px;text-align:center;font-size:9px}@media print{body{width:${width}}}${dcss}</style></head><body><div class="head"><div>${logo}<h2>${esc(b.name)}</h2><div>${esc(b.address||'')}</div><div>${esc(b.phone||'')}</div><div>${esc(b.email||'')}</div></div><h1>${x.type==='purchase'?'ক্রয়':'ইনভয়েস'}</h1></div><div class="meta">Invoice: ${esc(x.invoice)} &nbsp; | &nbsp; Date: ${esc(x.date)} &nbsp; | &nbsp; Party: ${esc(x.party||'Cash Sale')}</div><table><tr><th>পণ্য</th><th>Barcode</th><th>Qty</th><th>Price</th><th>Total</th></tr>${rows}</table><div class="total">Total: ${money(x.total)}<br>Paid: ${money(x.paid!=null?x.paid:x.total)}<br>Due: ${money(x.due||0)}</div><div class="footer">${esc(b.footer||'ধন্যবাদ। আবার আসবেন।')}</div></body></html>`);
  w.document.close();
 }
 function editInvoice(invoice){let b=biz(),x=b.sales.find(x=>x.invoice===invoice);if(x){startSalePOS(x.id);return}x=b.purchases.find(x=>x.invoice===invoice);if(x)openInvoice('purchase',x)}
 function deleteInvoice(invoice,type){if(!confirm('Invoice মুছে ফেলবেন? Stock পুনরায় সমন্বয় হবে।'))return;let b=biz(),list=type==='sale'?b.sales:b.purchases,x=list.find(v=>v.invoice===invoice);if(x)x.items.forEach(i=>{let p=b.products.find(p=>p.id===i.productId);if(p)p.stock += type==='sale'?i.qty:-i.qty});if(x){let idx=list.findIndex(v=>v.invoice===invoice);list.splice(idx,1)}save()}
-function saveSettings(silent){if(!requirePerm('settings'))return;let b=biz();Object.assign(b,{name:sName.value,phone:sPhone.value,email:sEmail.value,address:sAddress.value,currency:sCurrency.value||'৳',prefix:sPrefix.value||'INV',footer:sFooter.value,paper:sPaper?.value||'80mm',printer:sPrinter?.value||'',printLogo:sPrintLogo?.value||'yes',invoiceDesign:sInvoiceDesign?.value||'classic',themeColor:sThemeColor?.value||'#6b57d9',sidebarColor:sSidebarColor?.value||'#ffffff',dashboardColors:{stat1:sBoxStat1?.value||'#2563eb',stat2:sBoxStat2?.value||'#e5892b',stat3:sBoxStat3?.value||'#df5360',stat4:sBoxStat4?.value||'#20a56a',q1:sBoxQ1?.value||'#6b57d9',q2:sBoxQ2?.value||'#2563eb',q3:sBoxQ3?.value||'#20a56a',q4:sBoxQ4?.value||'#e5892b'}});save();applyTheme();if(!silent){alert('Settings Save হয়েছে। Invoice Design ও Theme Color-ও Save হয়েছে।')}else if(typeof showAutoSaveTick==='function'){showAutoSaveTick();}}
+function saveSettings(silent){if(!requirePerm('settings'))return;let b=biz();Object.assign(b,{name:sName.value,phone:sPhone.value,email:sEmail.value,address:sAddress.value,currency:sCurrency.value||'৳',prefix:sPrefix.value||'INV',footer:sFooter.value,paper:sPaper?.value||'80mm',printer:sPrinter?.value||'',printLogo:sPrintLogo?.value||'yes',invoiceDesign:sInvoiceDesign?.value||'classic',themeColor:sThemeColor?.value||'#6b57d9'});save();applyTheme();if(!silent){alert('Settings Save হয়েছে। Invoice Design ও Theme Color-ও Save হয়েছে।')}else if(typeof showAutoSaveTick==='function'){showAutoSaveTick();}}
 function toggleProfileMenu(){document.getElementById('profileMenu').classList.toggle('show')}
 function closeProfileMenu(){document.getElementById('profileMenu').classList.remove('show')}
 document.addEventListener('click',e=>{if(!e.target.closest('.profile-wrap'))closeProfileMenu()});
@@ -1801,19 +2018,7 @@ function ensureV12Data(){
   });
 }
 ensureV12Data();
-function applyTheme(){let b=biz();let c=b?.themeColor||'#6b57d9';document.documentElement.style.setProperty('--primary',c);document.documentElement.style.setProperty('--primary2',shadeColor(c,25));document.documentElement.style.setProperty('--softTheme',hexToRgba(c,.10));applyDashboardColors();applySidebarColor();}
-function applySidebarColor(){let b=biz();let sc=b?.sidebarColor||'#ffffff';document.documentElement.style.setProperty('--sidebarBg',sc);}
-function applyDashboardColors(){
-  let b=biz();let dc=(b&&b.dashboardColors)||{};
-  const setBox=(elId,color,softAlpha)=>{let el=document.getElementById(elId);if(!el||!color)return;el.style.setProperty('--card-accent',color);el.style.setProperty('--q-accent',color);el.style.setProperty('--card-accent-soft',hexToRgba(color,softAlpha||.12));el.style.setProperty('--q-accent-soft',hexToRgba(color,softAlpha||.12));};
-  setBox('statCardSales',dc.stat1);setBox('statCardPurchase',dc.stat2);setBox('statCardDue',dc.stat3);setBox('statCardStock',dc.stat4);
-  setBox('quickBtnSale',dc.q1);setBox('quickBtnPurchase',dc.q2);setBox('quickBtnProduct',dc.q3);setBox('quickBtnReport',dc.q4);
-}
-function resetDashboardColors(){
-  if(!requirePerm('settings'))return;
-  let b=biz();delete b.dashboardColors;b.sidebarColor='#ffffff';save();renderSettings();applyTheme();
-  if(typeof showAutoSaveTick==='function')showAutoSaveTick();
-}
+function applyTheme(){let b=biz();let c=b?.themeColor||'#6b57d9';document.documentElement.style.setProperty('--primary',c);document.documentElement.style.setProperty('--primary2',shadeColor(c,25));document.documentElement.style.setProperty('--softTheme',hexToRgba(c,.10));}
 function hexToRgba(hex,a){let h=String(hex||'').replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');let n=parseInt(h,16);if(isNaN(n))return `rgba(107,87,217,${a})`;return `rgba(${n>>16},${(n>>8)&255},${n&255},${a})`}
 function shadeColor(hex,amt){let h=String(hex||'#6b57d9').replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');let n=parseInt(h,16);if(isNaN(n))return '#8a78e8';let r=Math.min(255,Math.max(0,(n>>16)+amt)),g=Math.min(255,Math.max(0,((n>>8)&255)+amt)),bl=Math.min(255,Math.max(0,(n&255)+amt));return '#'+[r,g,bl].map(v=>v.toString(16).padStart(2,'0')).join('')}
 function applyThemePreset(v){if(!v)return;let el=document.getElementById('sThemeColor');if(el)el.value=v;document.documentElement.style.setProperty('--primary',v);document.documentElement.style.setProperty('--primary2',shadeColor(v,25));}
@@ -1884,8 +2089,6 @@ function saveStockAdjustment(){let b=biz(),pid=Number(document.getElementById('a
 
 function cancelBtn(inv,type){return inv.status==='Cancelled'?'<span class="badge">Cancelled</span>':`<button class="btn danger" onclick="cancelInvoice(${inv.id},'${type}')">Cancel</button>`}
 function renderSales(){salesTable.innerHTML=biz().sales.map(x=>`<tr><td><button class="invoice-link" onclick="previewInvoice('${x.invoice}')">${esc(x.invoice)}</button></td><td>${esc(x.party)}</td><td>${x.date}</td><td>${money(x.total)}</td><td>Paid</td><td>${x.status==='Cancelled'?'<span class="badge">Cancelled</span>':'Active'}</td><td><button class="btn secondary" onclick="editInvoice('${x.invoice}')">Edit</button> <button class="btn secondary" onclick="printInvoice('${x.invoice}')">Print</button> ${x.status==='Cancelled'?'<span></span>':`<button class="btn" onclick="openReturn('sale');setTimeout(()=>{let e=document.getElementById('retInvoice');if(e)e.value='${x.id}',renderReturnLines('sale')},50)">Return</button> ${cancelBtn(x,'sale')}`}</td></tr>`).join('')||'<tr><td colspan="7" class="empty">কোনো Sales নেই</td></tr>';}
-function renderPurchase(){purchaseTable.innerHTML=biz().purchases.map(x=>`<tr><td><button class="invoice-link" onclick="previewInvoice('${x.invoice}')">${esc(x.invoice)}</button></td><td>${esc(x.party)}</td><td>${x.date}</td><td>${money(x.total)}</td><td>Paid</td><td>${x.status==='Cancelled'?'<span class="badge">Cancelled</span>':'Active'}</td><td><button class="btn secondary" onclick="editInvoice('${x.invoice}')">Edit</button> <button class="btn secondary" onclick="printInvoice('${x.invoice}')">Print</button> ${x.status==='Cancelled'?'<span></span>':`<button class="btn" onclick="openReturn('purchase');setTimeout(()=>{let e=document.getElementById('retInvoice');if(e)e.value='${x.id}',renderReturnLines('purchase')},50)">Return</button> ${cancelBtn(x,'purchase')}`}</td></tr>`).join('')||'<tr><td colspan="7" class="empty">কোনো Purchase নেই</td></tr>';}
-
 // Replace account/stock/report/accounting calculations so cancelled invoices and returns are reflected.
 accountBalance=function(aid){let b=biz(),a=accountById(aid),bal=+(a?.opening||0);b.cash.filter(x=>String(x.accountId||'cash')===String(a.id)).forEach(x=>bal+=(x.type==='In'?1:-1)*Number(x.amount||0));b.sales.filter(x=>x.status!=='Cancelled'&&String(x.paymentAccount||'cash')===String(a.id)).forEach(x=>bal+=Number(x.paid!=null?x.paid:x.total||0));b.purchases.filter(x=>x.status!=='Cancelled'&&String(x.paymentAccount||'cash')===String(a.id)).forEach(x=>bal-=Number(x.paid!=null?x.paid:x.total||0));b.salesReturns.forEach(x=>{if(String(x.accountId||'cash')===String(a.id))bal-=Number(x.total||0)});b.purchaseReturns.forEach(x=>{if(String(x.accountId||'cash')===String(a.id))bal+=Number(x.total||0)});return bal}
 saleCost=function(b,x){if(x.status==='Cancelled')return 0;let c=(x.items||[]).reduce((sum,i)=>sum+(i.qty||0)*(i.cost!=null?i.cost:(b.products.find(p=>p.id==i.productId)?.buy||0)),0);let returned=b.salesReturns.filter(r=>r.invoiceId===x.id).reduce((sum,r)=>sum+(r.items||[]).reduce((a,i)=>a+i.qty*(i.cost!=null?i.cost:(b.products.find(p=>p.id==i.productId)?.buy||0)),0),0);return Math.max(0,c-returned)}
@@ -1917,7 +2120,7 @@ function v13Entries(b,dateFilter){
   // Account opening balances: positive = debit asset/expense, negative = credit liability/equity/revenue.
   b.accounts.forEach(a=>{let o=Number(a.opening||0);if(o>0)add('Opening','OPEN',a.name,o,0);else if(o<0)add('Opening','OPEN',a.name,0,-o)});
   b.sales.filter(x=>x.status!=='Cancelled').forEach(x=>{let an=v13Acct(x.paymentAccount||'cash')?.name||'Cash';let total=Number(x.total||0),paid=Number(x.paid||0),due=Math.max(0,total-paid);if(paid)add(x.date,x.invoice,an,paid,0);if(due)add(x.date,x.invoice,'Accounts Receivable',due,0);add(x.date,x.invoice,'Sales Revenue',0,total);let c=saleCost(b,x);if(c){add(x.date,x.invoice,'Cost of Sales',c,0);add(x.date,x.invoice,'Inventory',0,c)}});
-  b.purchases.filter(x=>x.status!=='Cancelled').forEach(x=>{let an=v13Acct(x.paymentAccount||'cash')?.name||'Cash';let total=Number(x.total||0);add(x.date,x.invoice,'Inventory',total,0);add(x.date,x.invoice,an,0,total)});
+  b.purchases.filter(x=>x.status!=='Cancelled').forEach(x=>{let an=v13Acct(x.paymentAccount||'cash')?.name||'Cash';let total=Number(x.total||0),paid=Number(x.paid!=null?x.paid:total),due=Math.max(0,total-paid);add(x.date,x.invoice,'Inventory',total,0);if(paid)add(x.date,x.invoice,an,0,paid);if(due)add(x.date,x.invoice,'Accounts Payable',0,due)});
   b.expenses.forEach(x=>{let an=v13Acct(x.accountId||'cash')?.name||'Cash';let total=Number(x.amount||0);add(x.date,'EXP','Expense — '+(x.category||'General'),total,0);add(x.date,'EXP',an,0,total)});
   b.cash.filter(x=>!x.transferId).forEach(x=>{let an=v13Acct(x.accountId||'cash')?.name||'Cash',total=Number(x.amount||0);if(x.type==='In'){add(x.date,'CASH',an,total,0);add(x.date,'CASH',x.note&&x.note.toLowerCase().includes('capital')?'Owner Capital':'Other Income',0,total)}else{add(x.date,'CASH',x.note&&x.note.toLowerCase().includes('capital')?'Owner Drawings':'Other Expense',total,0);add(x.date,'CASH',an,0,total)}});
   let seen={}; b.cash.filter(x=>x.transferId).forEach(x=>{if(seen[x.transferId])return;let pair=b.cash.filter(y=>y.transferId===x.transferId);let out=pair.find(y=>y.type==='Out'),inn=pair.find(y=>y.type==='In');if(out&&inn){let amt=Number(out.amount||0);if(!dateFilter||out.date===dateFilter){v13Add(r,out.date,'TRF',v13Acct(inn.accountId)?.name||'Account',amt,0);v13Add(r,out.date,'TRF',v13Acct(out.accountId)?.name||'Account',0,amt)}}seen[x.transferId]=1});
@@ -1934,124 +2137,221 @@ renderBalance=function(){let b=biz(),receiv=b.sales.filter(x=>x.status!=='Cancel
 const _v13OldAll=renderAll;renderAll=function(){v13EnsureAccounts();_v13OldAll();renderChartOfAccounts();};
 </script>
 <script>
-/* V17 Purchase POS: Purchase now uses the same barcode/name POS workflow as Sales. */
-let _purchaseItems=[], _purchaseEditId=0;
-function startPurchasePOS(existingId){if(!requirePerm('purchase'))return;showPage('purchase');if(existingId)loadPurchasePOS(existingId);else newPurchasePOS();setTimeout(()=>document.getElementById('purBarcode')?.focus(),80)}
-function newPurchasePOS(){_purchaseEditId=0;_purchaseItems=[];renderPurchasePOS();setTimeout(()=>document.getElementById('purBarcode')?.focus(),50)}
-function loadPurchasePOS(idv){let x=biz().purchases.find(v=>v.id==idv);if(!x)return;_purchaseEditId=x.id;_purchaseItems=(x.items||[]).filter(i=>i&&i.productId!=null).map(i=>({productId:i.productId,qty:+i.qty||1,price:+i.price||0}));renderPurchasePOS(x)}
-function purchaseBarcodeKey(e){if(e.key!=='Enter')return;e.preventDefault();let el=document.getElementById('purBarcode'),code=(el?.value||'').trim();if(!code)return;let p=biz().products.find(x=>String(x.barcode||'').toLowerCase()===code.toLowerCase());if(!p){alert('এই Barcode-এর কোনো পণ্য পাওয়া যায়নি।');el.select();return}addPurchasePOSProduct(p.id);el.value='';renderPurchaseProducts();setTimeout(()=>el.focus(),30)}
-function renderPurchasePOS(existing){let b=biz();modalTitle.textContent=_purchaseEditId?'ক্রয় Invoice Edit':'নতুন Purchase Invoice';modalBody.innerHTML=`<div style="display:grid;grid-template-columns:minmax(300px,1fr) minmax(340px,1.2fr);gap:18px;align-items:start"><div class="card" style="padding:14px"><div class="form-grid" style="grid-template-columns:1fr 1fr"><div class="field"><label>Supplier / Party</label><input id="purParty" value="${esc(existing?.party||'Cash Sale')}"></div><div class="field"><label>Date</label><input id="purDate" type="date" value="${existing?.date||today()}"></div></div><div class="field" style="margin-top:10px"><label>Payment Account</label><select id="purAccount">${b.accounts.map(a=>`<option value="${a.id}" ${existing?.paymentAccount===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select></div><div class="field" style="margin-top:10px"><label>🔎 Barcode Scan</label><input id="purBarcode" placeholder="Barcode scan করে Enter চাপুন" onkeydown="purchaseBarcodeKey(event)"></div><div class="field" style="margin-top:10px"><label>🔎 নাম / Barcode Search</label><input id="purNameSearch" placeholder="পণ্যের নাম বা Barcode লিখুন..." oninput="renderPurchaseProducts()"></div><div id="purchaseProductResults" style="margin-top:10px;max-height:390px;overflow:auto"></div></div><div class="card" style="padding:14px"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">🧾 Purchase Invoice</h3><span class="badge">${esc(_purchaseEditId?((existing&&existing.invoice)||'Edit'):'নতুন')}</span></div><div id="purchasePOSItems" style="margin-top:10px"></div><div style="border-top:1px solid #ddd;margin-top:12px;padding-top:12px;text-align:right"><div style="font-size:20px;font-weight:800">Total: <span id="purchasePOSTotal">${money(0)}</span></div><div style="margin-top:4px">Paid: <b id="purchasePOSPaid">${money(0)}</b> &nbsp; Due: <b>${money(0)}</b></div></div><div class="actions" style="margin-top:14px;justify-content:flex-end"><button class="btn secondary" onclick="closeModal()">বন্ধ</button><button class="btn" onclick="savePurchasePOS()">💾 Save / Update</button><button class="btn secondary" onclick="printPurchasePOS()">🖨️ Print</button></div></div></div>`;modal.classList.add('show');renderPurchaseProducts();renderPurchasePOSItems();purchasePOSRecalc();setTimeout(()=>document.getElementById('purBarcode')?.focus(),50)}
-function renderPurchaseProducts(){let q=(document.getElementById('purNameSearch')?.value||'').toLowerCase().trim();let arr=biz().products.filter(p=>{let text=(p.name+' '+(p.barcode||'')+' '+(p.category||'')).toLowerCase();return !q||text.includes(q)});let el=document.getElementById('purchaseProductResults');if(!el)return;el.innerHTML=arr.map(p=>`<button class="product-result" onclick="addPurchasePOSProduct(${p.id})"><div style="display:flex;gap:10px;align-items:flex-start">${p.image?`<img src="${p.image}" class="product-thumb">`:'<div class="product-thumb-placeholder">📦</div>'}<div><b>${esc(p.name)}</b><small>Barcode: ${esc(p.barcode||'')} | Stock: ${p.stock} ${esc(p.unit||'pcs')} | Purchase: ${money(p.buy||0)}</small></div></div></button>`).join('')||'<div class="empty">পণ্য পাওয়া যায়নি</div>'}
-function addPurchasePOSProduct(pid){let p=biz().products.find(x=>x.id==pid);if(!p)return;let line=_purchaseItems.find(x=>x.productId===p.id);if(line)line.qty++;else _purchaseItems.push({productId:p.id,qty:1,price:+(p.buy||0)});renderPurchasePOSItems();purchasePOSRecalc()}
+/* Purchase POS: mirrors the Sales POS page design exactly. Supports নগদ ক্রয় (cash purchase)
+   and বাকিতে ক্রয় (credit purchase) with a Supplier name/phone captured for বাকির হিসাব. */
+let _purchaseItems=[], _purchaseEditId=0, _purchaseMode='cash';
+
+function markPurchaseButton(mode){
+  const cash=document.getElementById('cashPurchaseBtn'), due=document.getElementById('duePurchaseBtn');
+  if(cash){cash.className='btn';cash.style.cssText='flex:1;background:'+(mode==='cash'?'#2563eb':'#eee')+';color:'+(mode==='cash'?'#fff':'#555');}
+  if(due){due.className='btn '+(mode==='credit'?'':'secondary');due.style.cssText='flex:1;background:'+(mode==='credit'?'#2563eb':'#eee')+';color:'+(mode==='credit'?'#fff':'#555');}
+}
+function setPurchaseMode(mode){
+  _purchaseMode=mode==='credit'?'credit':'cash';
+  markPurchaseButton(_purchaseMode);
+  purchasePOSRecalc();
+}
+function startPurchasePOS(existingId){
+  if(!requirePerm('purchase'))return;
+  showPage('purchase');
+  if(existingId){loadPurchasePOS(existingId);}else{newPurchasePOS();}
+  setTimeout(()=>document.getElementById('purBarcode')?.focus(),80);
+}
+function newPurchasePOS(){
+  _purchaseEditId=0; _purchaseItems=[];
+  if(document.getElementById('purParty'))purParty.value='Cash Purchase';
+  if(document.getElementById('purDate'))purDate.value=today();
+  if(document.getElementById('purCashPaid'))purCashPaid.value=0;
+  if(document.getElementById('purAccount')&&biz().accounts&&biz().accounts.length)purAccount.innerHTML=biz().accounts.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  if(document.getElementById('purInvoiceNo'))purInvoiceNo.textContent='নতুন Invoice';
+  setPurchaseMode('cash');
+  renderPurchaseProducts(); renderPurchasePOSItems(); purchasePOSRecalc();
+  setTimeout(()=>document.getElementById('purBarcode')?.focus(),50);
+}
+function resetPurchasePOS(){
+  if(_purchaseItems.length && !confirm('বর্তমান ইনভয়েসের সব আইটেম, সাপ্লায়ার ও বিবরণ মুছে ফেলা হবে। আপনি কি নিশ্চিত?')){return;}
+  newPurchasePOS();
+}
+function loadPurchasePOS(idv){
+  let x=biz().purchases.find(v=>v.id==idv); if(!x)return;
+  _purchaseEditId=x.id;
+  _purchaseItems=(x.items||[]).filter(i=>i&&i.productId!=null).map(i=>({productId:i.productId,qty:+i.qty||1,price:+i.price||0}));
+  if(document.getElementById('purAccount')&&biz().accounts&&biz().accounts.length)purAccount.innerHTML=biz().accounts.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  if(document.getElementById('purParty'))purParty.value=x.party||'Cash Purchase';
+  if(document.getElementById('purDate'))purDate.value=x.date||today();
+  if(document.getElementById('purCashPaid'))purCashPaid.value=Number(x.paid!=null?x.paid:x.total||0);
+  if(document.getElementById('purAccount'))purAccount.value=x.paymentAccount||'cash';
+  if(document.getElementById('purInvoiceNo'))purInvoiceNo.textContent='Edit: '+x.invoice;
+  setPurchaseMode(x.purchaseType==='credit'?'credit':'cash');
+  renderPurchaseProducts(); renderPurchasePOSItems(); purchasePOSRecalc();
+}
+function clearPurchasePOS(){newPurchasePOS()}
+function purchaseBarcodeKey(e){
+  if(e.key!=='Enter')return; e.preventDefault();
+  let el=document.getElementById('purBarcode'), code=(el?.value||'').trim(); if(!code)return;
+  let p=biz().products.find(x=>String(x.barcode||'').toLowerCase()===code.toLowerCase());
+  if(!p){alert('এই Barcode-এর কোনো পণ্য পাওয়া যায়নি।');el.select();return}
+  addPurchasePOSProduct(p.id); el.value=''; renderPurchaseProducts(); setTimeout(()=>el.focus(),30);
+}
+function renderPurchaseProducts(){
+  let q=(document.getElementById('purNameSearch')?.value||'').toLowerCase().trim();
+  let arr=biz().products.filter(p=>{let text=(p.name+' '+(p.barcode||'')+' '+(p.category||'')).toLowerCase();return !q||text.includes(q)});
+  let el=document.getElementById('purchaseProductResults'); if(!el)return;
+  el.innerHTML=arr.map(p=>`<button class="product-result" onclick="addPurchasePOSProduct(${p.id})">
+    <div style="display:flex;gap:10px;align-items:flex-start">${p.image?`<img src="${p.image}" class="product-thumb">`:'<div class="product-thumb-placeholder">📦</div>'}<div><b>${esc(p.name)}</b><br><small>Barcode: ${esc(p.barcode||'—')} | Stock: ${p.stock||0} ${esc(p.unit||'pcs')} | ক্রয়: ${money(p.buy||0)}</small></div></div>
+  </button>`).join('') || '<div class="empty">পণ্য পাওয়া যায়নি</div>';
+}
+function addPurchasePOSProduct(pid){
+  let p=biz().products.find(x=>x.id==pid); if(!p)return;
+  let line=_purchaseItems.find(x=>x.productId===p.id);
+  if(line)line.qty++; else _purchaseItems.push({productId:p.id,qty:1,price:+(p.buy||0)});
+  renderPurchasePOSItems(); purchasePOSRecalc();
+}
 function changePurchasePOSQty(pid,val){let x=_purchaseItems.find(i=>i.productId==pid);if(!x)return;x.qty=Math.max(.01,+val||1);renderPurchasePOSItems();purchasePOSRecalc()}
 function changePurchasePOSPrice(pid,val){let x=_purchaseItems.find(i=>i.productId==pid);if(!x)return;x.price=Math.max(0,+val||0);renderPurchasePOSItems();purchasePOSRecalc()}
 function removePurchasePOSItem(pid){_purchaseItems=_purchaseItems.filter(x=>x.productId!=pid);renderPurchasePOSItems();purchasePOSRecalc()}
-function renderPurchasePOSItems(){let b=biz(),el=document.getElementById('purchasePOSItems');if(!el)return;el.innerHTML=_purchaseItems.map(i=>{let p=b.products.find(x=>x.id==i.productId)||{};return `<div class="pos-item"><div><b>${esc(p.name||'Unknown')}</b><br><small>${esc(p.barcode||'')} | Unit: ${esc(p.unit||'pcs')}</small></div><input class="qty" type="number" min="0.01" value="${i.qty}" onchange="changePurchasePOSQty(${i.productId},this.value)"><input class="price" type="number" min="0" value="${i.price}" onchange="changePurchasePOSPrice(${i.productId},this.value)"><b>${money(i.qty*i.price)}</b><button class="btn danger" onclick="removePurchasePOSItem(${i.productId})">×</button></div>`}).join('')||'<div class="empty" style="padding:30px">Barcode Scan বা নাম Search করে পণ্য যোগ করুন</div>'}
-function purchasePOSRecalc(){let t=_purchaseItems.reduce((a,i)=>a+i.qty*i.price,0);let a=document.getElementById('purchasePOSTotal'),p=document.getElementById('purchasePOSPaid');if(a)a.textContent=money(t);if(p)p.textContent=money(t)}
-function savePurchasePOS(){let b=biz();if(!_purchaseItems.length){alert('কমপক্ষে ১টি পণ্য যোগ করুন।');return}let total=_purchaseItems.reduce((a,i)=>a+i.qty*i.price,0),old=_purchaseEditId?b.purchases.find(x=>x.id===_purchaseEditId):null;if(old)old.items.forEach(i=>{let p=b.products.find(x=>x.id===i.productId);if(p)p.stock-=i.qty});let inv=old||{id:id(),invoice:`${b.purchasePrefix||'PUR'}-${String(b.purchases.length+1).padStart(5,'0')}`};Object.assign(inv,{party:(document.getElementById('purParty')?.value||'Cash Sale').trim()||'Cash Sale',date:document.getElementById('purDate')?.value||today(),items:_purchaseItems.map(i=>{let p=b.products.find(p=>p.id===i.productId)||{};return {...i,cost:p.buy||0}}),total,paid:total,due:0,paymentAccount:document.getElementById('purAccount')?.value||'cash',status:old?.status||'Active'});if(old){let idx=b.purchases.findIndex(x=>x.id===old.id);b.purchases[idx]=inv}else b.purchases.push(inv);_purchaseItems.forEach(i=>{let p=b.products.find(x=>x.id===i.productId);if(p)p.stock+=i.qty});_purchaseEditId=inv.id;save();alert(`Purchase Invoice ${inv.invoice} ${old?'Update':'Save'} হয়েছে। Stock ও Cash Payment পুনরায় হিসাব হয়েছে।`);
-  // Save/Update সফল হলে Purchase POS-টি খালি করে নতুন Purchase-এর জন্য প্রস্তুত হবে।
-  _purchaseEditId=0; _purchaseItems=[]; openPurchaseModalFixed(null);
+function renderPurchasePOSItems(){
+  let b=biz(), el=document.getElementById('purchasePOSItems'); if(!el)return;
+  const cnt=document.getElementById('purItemCount'); if(cnt)cnt.textContent=_purchaseItems.length+' Item';
+  el.innerHTML=[..._purchaseItems].reverse().map(i=>{
+    let p=b.products.find(x=>x.id==i.productId)||{};
+    return `<div class="pos-item"><div><b>${esc(p.name||'Unknown')}</b><br><small>${esc(p.barcode||'')} | Unit: ${esc(p.unit||'pcs')}</small></div>
+      <input class="qty" type="number" min="0.01" value="${i.qty}" onchange="changePurchasePOSQty(${i.productId},this.value)">
+      <input class="price" type="number" min="0" value="${i.price}" onchange="changePurchasePOSPrice(${i.productId},this.value)">
+      <b>${money(i.qty*i.price)}</b>
+      <button class="btn danger" onclick="removePurchasePOSItem(${i.productId})">×</button></div>`;
+  }).join('') || '<div class="empty" style="padding:30px">Barcode Scan বা নাম Search করে পণ্য যোগ করুন</div>';
 }
-function printPurchasePOS(){if(_purchaseEditId){let x=biz().purchases.find(x=>x.id===_purchaseEditId);if(x)printInvoice(x.invoice);return}alert('আগে Purchase Invoice Save করুন, তারপর Print করুন।')}
-window.editInvoice=function(invoice){let b=biz(),x=b.sales.find(x=>x.invoice===invoice);if(x){startSalePOS(x.id);return}x=b.purchases.find(x=>x.invoice===invoice);if(x){startPurchasePOS(x.id);return}alert('Invoice পাওয়া যায়নি।')};
-(function(){try{db.businesses.forEach(b=>{b.purchasePrefix=b.purchasePrefix||'PUR';b.purchases=(b.purchases||[]).map(x=>({...x,status:x.status||'Active',paymentAccount:x.paymentAccount||'cash'}))});localStorage.setItem('bismillah_store_v1',JSON.stringify(db))}catch(e){console.warn('V17 migration',e)}})();
-</script>
+function purchasePOSRecalc(){
+  const total=_purchaseItems.reduce((a,i)=>a+(Number(i.qty)||0)*(Number(i.price)||0),0);
+  let paid,due;
+  if(_purchaseMode==='cash'){paid=total;due=0;if(document.getElementById('purCashPaid'))purCashPaid.value=total.toFixed(2);}
+  else{const cash=Math.max(0,Number(document.getElementById('purCashPaid')?.value||0));paid=Math.min(cash,total);due=Math.max(0,total-paid);}
+  if(document.getElementById('purchasePOSTotal'))purchasePOSTotal.textContent=money(total);
+  if(document.getElementById('purchasePOSDue'))purchasePOSDue.textContent=money(due);
+  return {total,paid,due};
+}
+function cashPurchaseAction(){
+  if(!_purchaseItems.length){alert('আগে পণ্য যোগ করুন।');return;}
+  setPurchaseMode('cash');
+  savePurchasePOS();
+}
+function openDueSupplierPage(){
+  if(!_purchaseItems.length){alert('আগে পণ্য যোগ করুন।');return;}
+  setPurchaseMode('credit');
+  const calc=purchasePOSRecalc();
+  const b=biz();
+  const suppliers=(b.parties||[]).filter(p=>String(p.type||'').toLowerCase().includes('supplier'));
+  const currentParty=(document.getElementById('purParty')?.value||'').trim();
+  const presetName=currentParty==='Cash Purchase'?'':currentParty;
+  const presetParty=suppliers.find(p=>p.name===presetName);
+  modalTitle.textContent='বাকিতে ক্রয় — Supplier Entry';
+  modalBody.innerHTML=`<div class="form-grid">
+    <div class="field"><label>মোট বিল</label><input id="pDueTotal" value="${calc.total.toFixed(2)}" readonly></div>
+    <div class="field"><label>ক্রয়ের তারিখ</label><input id="pDueDate" type="date" value="${document.getElementById('purDate')?.value||today()}"></div>
+    <div class="field"><label>সাপ্লায়ার নাম *</label><input id="pDueSupplier" list="pDueSupplierList" value="${esc(presetName)}" placeholder="সাপ্লায়ারের নাম লিখুন বা তালিকা থেকে বাছাই করুন" oninput="onDueSupplierPick()" autocomplete="off">
+      <datalist id="pDueSupplierList">${suppliers.map(p=>`<option value="${esc(p.name)}">`).join('')}</datalist>
+    </div>
+    <div class="field"><label>সাপ্লায়ার মোবাইল নম্বর</label><input id="pDuePhone" value="${esc(presetParty?presetParty.phone||'':'')}" placeholder="+88 XXXXXXXXXX"></div>
+    <div class="field"><label>নগদ প্রদান (এখনই)</label><input id="pDueCash" type="number" min="0" value="0" oninput="updatePDueRemaining()"></div>
+    <div class="field"><label>অবশিষ্ট বাকি</label><input id="pDueRemaining" value="${calc.total.toFixed(2)}" readonly></div>
+  </div>
+  <div class="actions" style="margin-top:18px;justify-content:flex-end">
+    <button class="btn secondary" onclick="closeModal()">বন্ধ</button>
+    <button class="btn" onclick="saveDueSupplierPage()">ক্রয় করুন</button>
+  </div>`;
+  modal.classList.add('show');
+}
+function onDueSupplierPick(){
+  const name=(document.getElementById('pDueSupplier')?.value||'').trim(); if(!name)return;
+  const party=biz().parties.find(p=>String(p.type||'').toLowerCase().includes('supplier')&&p.name===name);
+  const phoneEl=document.getElementById('pDuePhone'); if(party&&phoneEl)phoneEl.value=party.phone||'';
+}
+function updatePDueRemaining(){
+  const total=Number(document.getElementById('pDueTotal')?.value||0);
+  const cash=Math.max(0,Number(document.getElementById('pDueCash')?.value||0));
+  const el=document.getElementById('pDueRemaining'); if(el)el.value=Math.max(0,total-cash).toFixed(2);
+}
+function saveDueSupplierPage(){
+  const name=(document.getElementById('pDueSupplier')?.value||'').trim();
+  const phone=(document.getElementById('pDuePhone')?.value||'').trim();
+  if(!name){alert('সাপ্লায়ারের নাম দিন।');return;}
+  const b=biz();
+  if(document.getElementById('purParty'))purParty.value=name;
+  if(document.getElementById('purDate'))purDate.value=document.getElementById('pDueDate')?.value||today();
+  _purchaseMode='credit';
+  const cash=Math.max(0,Number(document.getElementById('pDueCash')?.value||0));
+  if(document.getElementById('purCashPaid'))purCashPaid.value=cash;
+  let party=b.parties.find(x=>x.name===name&&String(x.type||'').toLowerCase().includes('supplier'));
+  if(party){party.phone=phone||party.phone;}else{b.parties.push({id:id(),name,type:'Supplier',phone,address:'',balance:0});}
+  closeModal();
+  markPurchaseButton('credit');
+  purchasePOSRecalc();
+  savePurchasePOS();
+}
+function savePurchasePOS(){
+  const b=biz();
+  if(!_purchaseItems.length){alert('কমপক্ষে ১টি পণ্য যোগ করুন।');document.getElementById('purBarcode')?.focus();return false;}
+  const calc=purchasePOSRecalc();
+  const total=calc.total, paid=calc.paid, due=calc.due;
+  const old=_purchaseEditId?b.purchases.find(x=>x.id===_purchaseEditId):null;
+  if(old)old.items.forEach(i=>{let p=b.products.find(x=>x.id===i.productId);if(p)p.stock=Number(p.stock||0)-Number(i.qty||0)});
+  let inv=old;
+  if(!inv){inv={id:id(),invoice:`${b.purchasePrefix||'PUR'}-${String(b.purchases.length+1).padStart(5,'0')}`};b.purchases.push(inv);}
+  Object.assign(inv,{
+    type:'purchase',
+    party:(document.getElementById('purParty')?.value||'Cash Purchase').trim()||'Cash Purchase',
+    date:document.getElementById('purDate')?.value||today(),
+    items:_purchaseItems.map(i=>{let p=b.products.find(p=>p.id===i.productId)||{};return {...i,cost:p.buy||0}}),
+    total,paid,due,purchaseType:_purchaseMode,
+    paymentAccount:document.getElementById('purAccount')?.value||'cash',
+    status:old?.status||'Active'
+  });
+  _purchaseItems.forEach(i=>{let p=b.products.find(x=>x.id===i.productId);if(p)p.stock=Number(p.stock||0)+Number(i.qty||0)});
+  _purchaseEditId=inv.id;
+  if(document.getElementById('purInvoiceNo'))purInvoiceNo.textContent='Saved: '+inv.invoice;
+  save();
+  alert(`Purchase Invoice ${inv.invoice} ${old?'Update':'Save'} হয়েছে। Stock ও হিসাব হালনাগাদ হয়েছে।`);
+  newPurchasePOS();
+  return true;
+}
+function printPurchasePOS(){
+  if(_purchaseEditId){let x=biz().purchases.find(x=>x.id===_purchaseEditId);if(x){printInvoice(x.invoice);return}}
+  alert('আগে Purchase Invoice Save করুন, তারপর Print করুন।');
+}
+window.editInvoice=function(invoice){let b=biz(),x=b.sales.find(x=>x.invoice===invoice);if(x){startSalePOS(x.id);return}x=b.purchases.find(x=>x.invoice===invoice);if(x){startPurchasePOS(x.id);return}alert('Invoice পাওয়া যায়নি।')};
 
-<script>
-/* V19 FIX: Purchase New button opens a reliable Purchase POS directly. */
-window.openPurchasePOSFixed = function(existingId){
-  try{
-    if(typeof requirePerm==='function' && !requirePerm('purchase')) return;
-    _purchaseEditId = existingId ? existingId : 0;
-    if(existingId){
-      let found = biz().purchases.find(v=>String(v.id)===String(existingId));
-      if(!found){ alert('Purchase Invoice পাওয়া যায়নি।'); return; }
-      _purchaseItems = (found.items||[]).filter(i=>i && i.productId!=null).map(i=>({productId:i.productId,qty:Number(i.qty)||1,price:Number(i.price)||0}));
-      openPurchaseModalFixed(found);
-    }else{
-      _purchaseItems=[];
-      openPurchaseModalFixed(null);
-    }
-  }catch(err){
-    console.error('Purchase POS error:',err);
-    alert('Purchase Invoice খুলতে সমস্যা হয়েছে। আবার চেষ্টা করুন।\n'+(err.message||err));
-  }
-};
-
-window.openPurchaseModalFixed = function(existing){
-  let b=biz();
-  const modalEl=document.getElementById('modal');
-  const titleEl=document.getElementById('modalTitle');
-  const bodyEl=document.getElementById('modalBody');
-  if(!modalEl || !titleEl || !bodyEl){
-    alert('Invoice window পাওয়া যাচ্ছে না। HTML ফাইলটি আবার খুলুন।');
-    return;
-  }
-  titleEl.textContent = existing ? 'ক্রয় Invoice Edit' : 'নতুন Purchase Invoice';
-  bodyEl.innerHTML = `
-    <div class="purchase-pos-grid" style="display:grid;grid-template-columns:minmax(300px,1fr) minmax(340px,1.2fr);gap:18px;align-items:start">
-      <div class="card" style="padding:14px">
-        <div class="form-grid" style="grid-template-columns:1fr 1fr">
-          <div class="field"><label>Supplier / Party</label><input id="purParty" value="${esc(existing?.party||'Cash Sale')}"></div>
-          <div class="field"><label>Date</label><input id="purDate" type="date" value="${existing?.date||today()}"></div>
-        </div>
-        <div class="field" style="margin-top:10px"><label>Payment Account</label>
-          <select id="purAccount">${b.accounts.map(a=>`<option value="${esc(a.id)}" ${existing?.paymentAccount===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select>
-        </div>
-        <div class="field" style="margin-top:10px"><label>🔎 Barcode Scan</label>
-          <div class="barcode-box">
-            <input id="purBarcode" autocomplete="off" placeholder="Barcode scan করে Enter চাপুন">
-            <button type="button" class="barcode-cam-btn" title="ক্যামেরা দিয়ে Scan" onclick="openCameraScan('purchase')">📷</button>
-          </div>
-        </div>
-        <div class="field" style="margin-top:10px"><label>🔎 নাম / Barcode Search</label>
-          <input id="purNameSearch" autocomplete="off" placeholder="পণ্যের নাম বা Barcode লিখুন..." oninput="renderPurchaseProducts()">
-        </div>
-        <div id="purchaseProductResults" style="margin-top:10px;max-height:390px;overflow:auto"></div>
-      </div>
-      <div class="card" style="padding:14px">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <h3 style="margin:0">🧾 Purchase Invoice</h3>
-          <span class="badge">${esc(existing?.invoice||'নতুন')}</span>
-        </div>
-        <div id="purchasePOSItems" style="margin-top:10px"></div>
-        <div style="border-top:1px solid #ddd;margin-top:12px;padding-top:12px;text-align:right">
-          <div style="font-size:20px;font-weight:800">Total: <span id="purchasePOSTotal">${money(0)}</span></div>
-          <div style="margin-top:4px">Paid: <b id="purchasePOSPaid">${money(0)}</b> &nbsp; Due: <b>${money(0)}</b></div>
-        </div>
-        <div class="actions" style="margin-top:14px;justify-content:flex-end">
-          <button class="btn secondary" type="button" onclick="closeModal()">বন্ধ</button>
-          <button class="btn" type="button" onclick="savePurchasePOS()">💾 Save / Update</button>
-          <button class="btn secondary" type="button" onclick="printPurchasePOS()">🖨️ Print</button>
-        </div>
-      </div>
-    </div>`;
-  modalEl.classList.add('show');
-  if(typeof renderPurchaseProducts==='function') renderPurchaseProducts();
-  if(typeof renderPurchasePOSItems==='function') renderPurchasePOSItems();
-  if(typeof purchasePOSRecalc==='function') purchasePOSRecalc();
-  const barcode=document.getElementById('purBarcode');
-  if(barcode){
-    barcode.onkeydown=function(e){ purchaseBarcodeKey(e); };
-    setTimeout(()=>barcode.focus(),80);
-  }
-};
-
-/* Make the original entry point use the fixed implementation too. */
-window.startPurchasePOS = function(existingId){
-  try{
-    if(typeof requirePerm==='function' && !requirePerm('purchase')) return;
-    if(!existingId){
-      _purchaseEditId=0; _purchaseItems=[];
-      openPurchaseModalFixed(null);
-    }else{
-      openPurchasePOSFixed(existingId);
-    }
-  }catch(err){
-    console.error(err);
-    alert('Purchase POS খুলতে সমস্যা হয়েছে।\n'+(err.message||err));
-  }
-};
+function renderPurchaseList(){
+  let b=biz(), q=(document.getElementById('purchaseInvoiceSearch')?.value||'').toLowerCase().trim();
+  let rows=(b.purchases||[]).filter(x=>{
+    if(!q)return true;
+    let products=(x.items||[]).map(i=>{let p=b.products.find(p=>p.id==i.productId)||{};return (p.name||'')+' '+(p.barcode||'')}).join(' ');
+    return (x.invoice+' '+x.party+' '+products).toLowerCase().includes(q);
+  }).slice().reverse();
+  const tbody=document.getElementById('purchaseListTable'); if(!tbody)return;
+  tbody.innerHTML=rows.map(x=>`<tr>
+    <td>${x.date}</td><td><button class="invoice-link" onclick="previewInvoice('${esc(x.invoice)}')">${esc(x.invoice)}</button></td><td>${esc(x.party)}</td>
+    <td>${money(x.total)}</td><td>${money(x.paid!=null?x.paid:x.total)}</td><td>${money(x.due||0)}</td>
+    <td>${x.status==='Cancelled'?'<span class="badge">Cancelled</span>':'Active'}</td>
+    <td><button class="btn secondary" onclick="editInvoice('${esc(x.invoice)}')">Edit</button>
+    <button class="btn secondary" onclick="printInvoice('${esc(x.invoice)}')">Print</button>
+    ${x.status==='Cancelled'?'':`<button class="btn" onclick="openReturn('purchase');setTimeout(()=>{let e=document.getElementById('retInvoice');if(e)e.value='${x.id}',renderReturnLines('purchase')},50)">Return</button> ${cancelBtn(x,'purchase')}`}</td>
+  </tr>`).join('') || '<tr><td colspan="8" class="empty">কোনো ক্রয় Invoice নেই</td></tr>';
+}
+function renderPurchaseSummary(){
+  let b=biz(), now=new Date(), y=now.getFullYear(), m=String(now.getMonth()+1).padStart(2,'0'),
+      tday=now.toISOString().slice(0,10), month=`${y}-${m}`;
+  let list=(b.purchases||[]).filter(x=>x.status!=='Cancelled');
+  let todayTotal=list.filter(x=>x.date===tday).reduce((a,x)=>a+Number(x.total||0),0);
+  let monthTotal=list.filter(x=>x.date&&x.date.startsWith(month)).reduce((a,x)=>a+Number(x.total||0),0);
+  let yearTotal=list.filter(x=>x.date&&x.date.startsWith(String(y))).reduce((a,x)=>a+Number(x.total||0),0);
+  let dueTotal=list.reduce((a,x)=>a+Number(x.due||0),0);
+  if(document.getElementById('purToday'))purToday.textContent=money(todayTotal);
+  if(document.getElementById('purMonth'))purMonth.textContent=money(monthTotal);
+  if(document.getElementById('purYear'))purYear.textContent=money(yearTotal);
+  if(document.getElementById('purDueTotal'))purDueTotal.textContent=money(dueTotal);
+}
+(function(){try{db.businesses.forEach(b=>{b.purchasePrefix=b.purchasePrefix||'PUR';b.purchases=(b.purchases||[]).map(x=>({...x,type:'purchase',status:x.status||'Active',paymentAccount:x.paymentAccount||'cash',purchaseType:x.purchaseType||(Number(x.due||0)>0?'credit':'cash')}))});localStorage.setItem('bismillah_store_v1',JSON.stringify(db))}catch(e){console.warn('Purchase migration',e)}})();
 </script>
 <script>
 /* V20 REPORT FOLDERS: separate Sales / Purchase / Return reports with Day / Month / Year filters. */
@@ -2412,7 +2712,7 @@ v21EnsureProductReturns();
 <script>
 /* BUSINESS PROFILE AUTO-SAVE: Business & Invoice Settings fields save automatically as the user types/changes them */
 (function(){
-  const FIELD_IDS=['sName','sPhone','sEmail','sAddress','sCurrency','sPrefix','sFooter','sPaper','sPrinter','sPrintLogo','sInvoiceDesign','sThemeColor','sSidebarColor','sBoxStat1','sBoxStat2','sBoxStat3','sBoxStat4','sBoxQ1','sBoxQ2','sBoxQ3','sBoxQ4'];
+  const FIELD_IDS=['sName','sPhone','sEmail','sAddress','sCurrency','sPrefix','sFooter','sPaper','sPrinter','sPrintLogo','sInvoiceDesign','sThemeColor'];
   let timer=null, wired=false;
   window.showAutoSaveTick=function(){
     const el=document.getElementById('autoSaveStatus');
@@ -2475,10 +2775,14 @@ v21EnsureProductReturns();
 </script>
 <script>
 /* Camera barcode scanner (mobile camera) for Sales / Purchase POS */
-let _cameraScanner=null, _cameraScanMode='sales';
+let _cameraScanner=null, _cameraScanMode='sales', _cameraScanHandled=false, _lastScannedCode=null, _lastScannedAt=0, _cameraScanCount=0;
 
 function openCameraScan(mode){
   _cameraScanMode = mode || 'sales';
+  _cameraScanHandled = false;
+  _lastScannedCode = null;
+  _lastScannedAt = 0;
+  _cameraScanCount = 0;
   const modalEl=document.getElementById('cameraScanModal');
   const statusEl=document.getElementById('cameraScanStatus');
   const readerEl=document.getElementById('cameraScanReader');
@@ -2504,13 +2808,24 @@ function openCameraScan(mode){
       camId,
       { fps: 10, qrbox: { width: 260, height: 160 } },
       function(decodedText){
-        if(statusEl) statusEl.textContent='✅ পাওয়া গেছে: '+decodedText;
+        if(_cameraScanHandled) return;
+        // Ignore the exact same barcode scanned again within the cooldown window —
+        // the camera keeps seeing the same physical barcode for a moment after a hit.
+        const now=Date.now();
+        if(decodedText===_lastScannedCode && (now-_lastScannedAt)<1800) return;
+        _cameraScanHandled = true;
+        _lastScannedCode = decodedText;
+        _lastScannedAt = now;
+        _cameraScanCount++;
+        if(statusEl) statusEl.textContent='✅ ('+_cameraScanCount+') পাওয়া গেছে: '+decodedText+' — পরের পণ্য স্ক্যান করুন, শেষ হলে "বন্ধ করুন"-এ চাপুন।';
         handleBarcodeScanned(decodedText, _cameraScanMode);
-        closeCameraScan();
+        // Stay open for continuous scanning — just re-arm after a brief cooldown
+        // instead of closing the camera after every single item.
+        setTimeout(()=>{ _cameraScanHandled=false; },700);
       },
       function(){ /* scan failure per-frame, ignore */ }
     ).then(function(){
-      statusEl.textContent='বারকোডের দিকে ক্যামেরা ধরুন...';
+      statusEl.textContent='বারকোডের দিকে ক্যামেরা ধরুন... (একাধিক পণ্য একটানা স্ক্যান করা যাবে)';
     }).catch(function(err){
       statusEl.textContent='ক্যামেরা চালু করা যায়নি: '+(err && err.message ? err.message : err);
     });
@@ -2530,31 +2845,31 @@ function closeCameraScan(){
   if(modalEl) modalEl.classList.remove('show');
 }
 
-function playBeepSound(){
-  try{
-    const ctx=new (window.AudioContext||window.webkitAudioContext)();
-    const osc=ctx.createOscillator();
-    const gain=ctx.createGain();
-    osc.type='sine';
-    osc.frequency.value=1000;
-    gain.gain.setValueAtTime(0.25,ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.15);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime+0.15);
-    osc.onended=function(){ ctx.close && ctx.close(); };
-  }catch(e){ /* ignore audio errors */ }
-}
-
 function handleBarcodeScanned(code, mode){
   code=(code||'').trim();
   if(!code) return;
-  playBeepSound();
   if(mode==='purchase'){
-    const el=document.getElementById('purBarcode');
-    if(el) el.value=code;
-    if(typeof purchaseBarcodeKey==='function') purchaseBarcodeKey({key:'Enter',preventDefault:function(){}});
+    // Directly add the product instead of round-tripping through the text field + simulated
+    // Enter keypress — this avoids silently failing if the purchase page/DOM was momentarily
+    // not ready (e.g. right after the camera permission prompt on some mobile browsers).
+    const purchasePageOpen = document.getElementById('purchase')?.classList.contains('active');
+    const el = document.getElementById('purBarcode');
+    if(!purchasePageOpen || !el){
+      alert('ক্রয় Invoice পেজটি খোলা নেই। "নতুন ক্রয়" থেকে আবার শুরু করুন, তারপর ক্যামেরা স্ক্যান করুন।');
+      return;
+    }
+    const p=biz().products.find(x=>String(x.barcode||'').toLowerCase()===code.toLowerCase());
+    if(!p){
+      alert('এই Barcode ("'+code+'") এর কোনো পণ্য পাওয়া যায়নি।');
+      el.value=code; el.select();
+      return;
+    }
+    addPurchasePOSProduct(p.id);
+    el.value='';
+    if(typeof renderPurchaseProducts==='function') renderPurchaseProducts();
+    if(typeof renderPurchasePOSItems==='function') renderPurchasePOSItems();
+    if(typeof purchasePOSRecalc==='function') purchasePOSRecalc();
+    setTimeout(()=>el.focus(),30);
   }else{
     const el=document.getElementById('posBarcode');
     if(el) el.value=code;

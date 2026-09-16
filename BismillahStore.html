@@ -2777,7 +2777,21 @@ v21EnsureProductReturns();
 /* Camera barcode scanner (mobile camera) for Sales / Purchase POS */
 let _cameraScanner=null, _cameraScanMode='sales', _cameraScanHandled=false, _lastScannedCode=null, _lastScannedAt=0, _cameraScanCount=0;
 
+function playScanBeep(){
+  try{
+    if(!window._beepAudioCtx){window._beepAudioCtx=new (window.AudioContext||window.webkitAudioContext)();}
+    const ctx=window._beepAudioCtx;
+    if(ctx.state==='suspended'){ctx.resume();}
+    const osc=ctx.createOscillator(), gain=ctx.createGain();
+    osc.type='square'; osc.frequency.value=1800;
+    gain.gain.setValueAtTime(0.28,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.12);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime+0.13);
+  }catch(e){console.warn('Beep failed',e);}
+}
 function openCameraScan(mode){
+  try{if(!window._beepAudioCtx){window._beepAudioCtx=new (window.AudioContext||window.webkitAudioContext)();}else if(window._beepAudioCtx.state==='suspended'){window._beepAudioCtx.resume();}}catch(e){}
   _cameraScanMode = mode || 'sales';
   _cameraScanHandled = false;
   _lastScannedCode = null;
@@ -2817,6 +2831,8 @@ function openCameraScan(mode){
         _lastScannedCode = decodedText;
         _lastScannedAt = now;
         _cameraScanCount++;
+        playScanBeep();
+        if(navigator.vibrate)try{navigator.vibrate(80)}catch(e){}
         if(statusEl) statusEl.textContent='✅ ('+_cameraScanCount+') পাওয়া গেছে: '+decodedText+' — পরের পণ্য স্ক্যান করুন, শেষ হলে "বন্ধ করুন"-এ চাপুন।';
         handleBarcodeScanned(decodedText, _cameraScanMode);
         // Stay open for continuous scanning — just re-arm after a brief cooldown

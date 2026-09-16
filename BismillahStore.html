@@ -200,7 +200,7 @@ function softRefreshCurrentPage(){
 
 <div id="phoneLoginGate" class="login-screen" style="z-index:10500;display:none">
   <div class="login-box">
-    <div class="login-logo"><h1>বিসমিল্লাহ স্টোর</h1><p>📱 মোবাইল নাম্বার দিয়ে লগইন করুন</p></div>
+    <div class="login-logo"><img src="icon-192.png" alt="Bismillah Store" style="width:64px;height:64px;border-radius:50%;object-fit:cover;box-shadow:0 3px 10px rgba(0,0,0,.15);margin-bottom:10px"><h1>বিসমিল্লাহ স্টোর</h1><p>📱 মোবাইল নাম্বার দিয়ে লগইন করুন</p></div>
     <div class="notice" style="margin-bottom:10px">যেকোনো ডিভাইস (মোবাইল/কম্পিউটার) থেকে এই একই নাম্বার ও পাসওয়ার্ড দিয়ে লগইন করলে আপনার সব বিক্রয়/স্টক/হিসাব স্বয়ংক্রিয়ভাবে চলে আসবে।</div>
     <div class="field"><label>মোবাইল নাম্বার</label><input id="cloudLoginPhone" type="tel" placeholder="01XXXXXXXXX" autocomplete="tel"></div>
     <div class="field"><label>পাসওয়ার্ড / পিন</label><input id="cloudLoginPass" type="password" placeholder="কমপক্ষে ৪ সংখ্যা/অক্ষর" autocomplete="current-password" onkeydown="if(event.key==='Enter')doCloudPhoneLogin()"></div>
@@ -211,7 +211,7 @@ function softRefreshCurrentPage(){
 
 <div id="loginScreen" class="login-screen">
   <div class="login-box">
-    <div class="login-logo"><h1>বিসমিল্লাহ স্টোর</h1><p>🔐 Secure Login</p></div>
+    <div class="login-logo"><img src="icon-192.png" alt="Bismillah Store" style="width:64px;height:64px;border-radius:50%;object-fit:cover;box-shadow:0 3px 10px rgba(0,0,0,.15);margin-bottom:10px"><h1>বিসমিল্লাহ স্টোর</h1><p>🔐 Secure Login</p></div>
     <div class="field"><label>Username</label><input id="loginUsername" autocomplete="username" placeholder="Username"></div>
     <div class="field"><label>Password</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key==='Enter')login()"></div>
     <button class="login-btn" onclick="login()">🔓 Login</button>
@@ -223,7 +223,7 @@ function softRefreshCurrentPage(){
 
 <div class="app">
 <aside class="sidebar" id="sidebar">
-  <div class="brand"><h1>বিসমিল্লাহ স্টোর</h1><p>Offline Business Manager</p></div>
+  <div class="brand"><div style="display:flex;align-items:center;gap:10px"><img src="icon-192.png" alt="Bismillah Store" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.25)"><h1 style="margin:0">বিসমিল্লাহ স্টোর</h1></div><p>Offline Business Manager</p></div>
   <div class="business">
     <div style="font-size:12px;color:#777;margin-bottom:6px">বর্তমান ব্যবসা</div>
     <select id="businessSelect" onchange="switchBusiness(this.value)"></select>

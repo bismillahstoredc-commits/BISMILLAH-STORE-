@@ -1077,8 +1077,8 @@ function ensureBusinessData(){
   if(!b.accounts.length)b.accounts=[{id:'cash',name:'Cash',type:'Cash',opening:0}];
   if(!b.accounts.some(a=>a.id==='cash'))b.accounts.unshift({id:'cash',name:'Cash',type:'Cash',opening:0});
   b.cash=(b.cash||[]).map(x=>({...x,accountId:x.accountId||'cash'}));
-  b.sales=(b.sales||[]).map(x=>({...x,paymentAccount:x.paymentAccount||'cash',saleType:x.saleType||'cash',discount:Number(x.discount||0),due:Number(x.due||0),paid:Number(x.paid!=null?x.paid:(x.total||0))}));
-  b.purchases=(b.purchases||[]).map(x=>({...x,paymentAccount:x.paymentAccount||'cash',due:0}));
+  b.sales=(b.sales||[]).map(x=>({...x,id:(x.id!=null&&x.id!==0)?x.id:id(),paymentAccount:x.paymentAccount||'cash',saleType:x.saleType||'cash',discount:Number(x.discount||0),due:Number(x.due||0),paid:Number(x.paid!=null?x.paid:(x.total||0))}));
+  b.purchases=(b.purchases||[]).map(x=>({...x,id:(x.id!=null&&x.id!==0)?x.id:id(),paymentAccount:x.paymentAccount||'cash',due:0}));
   b.users=(b.users||[]).map(u=>{if(!Array.isArray(u.permissions)){let r=(u.role||'Cashier');u.permissions=r==='Admin'?['*']:(r==='Manager'?['dashboard','sales','purchase','products','parties','cash','expenses','ledger','balance','opening','reports','trial','daybook','returns']:r==='Accountant'?['dashboard','cash','expenses','ledger','balance','opening','reports']:['dashboard','sales','products','parties']);}return u});
  });
 }
@@ -1096,9 +1096,9 @@ let currentUser=null;
 function getUsersAll(){return db.businesses.flatMap((b,bi)=>(b.users||[]).map(u=>({...u,businessIndex:bi})));}
 function authRead(){try{return JSON.parse(localStorage.getItem('bismillah_logged_user')||'null')}catch(e){return null}}
 function authWrite(x){try{localStorage.setItem('bismillah_logged_user',JSON.stringify(x));return true}catch(e){console.warn('Login state save failed',e);return false}}
-function login(){currentUser=getUsersAll().find(u=>u.username==='admin')||getUsersAll()[0]||null;if(currentUser){db.currentBusiness=currentUser.businessIndex;ensureBusinessData();}loginScreen.style.display='none';updateProfileUI();renderAll();}
+function login(){currentUser=getUsersAll().find(u=>u.username==='admin')||getUsersAll()[0]||null;if(currentUser){db.currentBusiness=currentUser.businessIndex;ensureBusinessData();save();}loginScreen.style.display='none';updateProfileUI();renderAll();}
 function logout(){currentUser=getUsersAll().find(u=>u.username==='admin')||getUsersAll()[0]||null;loginScreen.style.display='none';updateProfileUI();}
-function restoreLogin(){const session=authRead();currentUser=getUsersAll().find(u=>u.username===(session&&session.username||'admin'))||getUsersAll().find(u=>u.username==='admin')||getUsersAll()[0]||null;if(currentUser){const bi=Number(session&&session.businessIndex);if(Number.isInteger(bi)&&bi>=0&&bi<db.businesses.length){db.currentBusiness=bi;}else if(Number.isInteger(currentUser.businessIndex)&&currentUser.businessIndex>=0&&currentUser.businessIndex<db.businesses.length){db.currentBusiness=currentUser.businessIndex;}ensureBusinessData();}loginScreen.style.display='none';return true;}
+function restoreLogin(){const session=authRead();currentUser=getUsersAll().find(u=>u.username===(session&&session.username||'admin'))||getUsersAll().find(u=>u.username==='admin')||getUsersAll()[0]||null;if(currentUser){const bi=Number(session&&session.businessIndex);if(Number.isInteger(bi)&&bi>=0&&bi<db.businesses.length){db.currentBusiness=bi;}else if(Number.isInteger(currentUser.businessIndex)&&currentUser.businessIndex>=0&&currentUser.businessIndex<db.businesses.length){db.currentBusiness=currentUser.businessIndex;}ensureBusinessData();save();}loginScreen.style.display='none';return true;}
 function updateProfileUI(){let u=currentUser||{name:'Admin',username:'admin',role:'Admin'},b=biz();document.getElementById('profileName').textContent=u.name||u.username;document.getElementById('profilePhone').textContent=b.name||'Business Account';document.getElementById('profileAvatar').textContent=(u.name||u.username||'A').charAt(0).toUpperCase()}
 function renderAll(){renderBusinessSelect();renderDashboard();renderSales();renderProducts();renderParties();renderCash();renderExpenses();renderAccounts();renderReports();renderUsers();renderSettings();populateLedgerParties();renderLedger();renderBalance();renderOpening();renderTrialBalance();renderDayBook();renderSalesQuick();renderSalesList();renderSalesSummary();if(document.getElementById('posProductResults'))renderPOSProducts();renderPOSItems();posRecalc();if(typeof renderPurchaseList==='function')renderPurchaseList();if(typeof renderPurchaseSummary==='function')renderPurchaseSummary();if(document.getElementById('purchaseProductResults')&&typeof renderPurchaseProducts==='function')renderPurchaseProducts();if(typeof renderPurchasePOSItems==='function')renderPurchasePOSItems();if(typeof purchasePOSRecalc==='function')purchasePOSRecalc();renderLowStockAlerts();renderCloudStatus()}
 
@@ -2263,7 +2263,7 @@ function printPurchasePOS(){
   if(_purchaseEditId){let x=biz().purchases.find(x=>x.id===_purchaseEditId);if(x){printInvoice(x.invoice);return}}
   alert('আগে Purchase Invoice Save করুন, তারপর Print করুন।');
 }
-window.editInvoice=function(invoice){let b=biz(),x=b.sales.find(x=>x.invoice===invoice);if(x){startSalePOS(x.id);return}x=b.purchases.find(x=>x.invoice===invoice);if(x){startPurchasePOS(x.id);return}alert('Invoice পাওয়া যায়নি।')};
+window.editInvoice=function(invoice){let b=biz(),x=b.sales.find(x=>x.invoice===invoice);if(x){if(x.id==null||x.id===0){x.id=id();save();}startSalePOS(x.id);return}x=b.purchases.find(x=>x.invoice===invoice);if(x){if(x.id==null||x.id===0){x.id=id();save();}startPurchasePOS(x.id);return}alert('Invoice পাওয়া যায়নি।')};
 
 function renderPurchaseList(){
   let b=biz(), q=(document.getElementById('purchaseInvoiceSearch')?.value||'').toLowerCase().trim();

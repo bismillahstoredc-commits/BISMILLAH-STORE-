@@ -1627,17 +1627,24 @@ function restoreSafetyBackup(i){
    side has a timestamp yet (older data saved before this fix), so old behavior is preserved there. */
 function mergeArraysById(localArr,remoteArr){
   localArr=Array.isArray(localArr)?localArr:[]; remoteArr=Array.isArray(remoteArr)?remoteArr:[];
+  // পুরনো/মিসিং id-ওয়ালা রেকর্ড যাতে merge-এর সময় চুপচাপ হারিয়ে না যায় (আগে এমনটা হতো),
+  // তার জন্য id না থাকলে content-ভিত্তিক একটা fallback key দিয়ে ম্যাচ করি।
+  function fallbackKey(item){ try{ const c={...item}; delete c.id; delete c.updatedAt; return 'noid:'+JSON.stringify(c); }catch(e){ return 'noid:'+Math.random(); } }
+  function keyOf(item){ return item.id!=null ? item.id : fallbackKey(item); }
   const map=new Map();
-  remoteArr.forEach(item=>{ if(item&&item.id!=null) map.set(item.id,item); });
+  remoteArr.forEach(item=>{ if(item) map.set(keyOf(item),item); });
   localArr.forEach(item=>{
-    if(!item||item.id==null)return;
-    const existing=map.get(item.id);
-    if(!existing){ map.set(item.id,item); return; } // local-only record: nothing is ever dropped
+    if(!item)return;
+    const k=keyOf(item);
+    const existing=map.get(k);
+    if(!existing){ map.set(k,item); return; } // local-only record: nothing is ever dropped
     const localT=Number(item.updatedAt)||0, remoteT=Number(existing.updatedAt)||0;
-    if(localT>=remoteT) map.set(item.id,item); // newer (or tied/untimestamped) local copy wins
+    if(localT>=remoteT) map.set(k,item); // newer (or tied/untimestamped) local copy wins
     // else: remote copy is genuinely newer, so it stays in the map untouched
   });
-  return Array.from(map.values());
+  const out=Array.from(map.values());
+  out.forEach(item=>{ if(item&&item.id==null) item.id=id(); }); // স্থায়ীভাবে id বসিয়ে দিই, যাতে পরের বার আর fallback লাগবে না
+  return out;
 }
 /* Stamp updatedAt=now on any record that actually changed since the last save, by diffing
    against the snapshot captured after the previous save/sync. This is what makes the

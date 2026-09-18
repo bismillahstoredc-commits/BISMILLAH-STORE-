@@ -353,6 +353,7 @@ function softRefreshCurrentPage(){
       <div style="text-align:right;margin-top:5px;color:#2563eb;font-weight:800">লাভ: <span id="posProfit">৳ 0.00</span></div>
 
       <div class="pos-bottom-actions" style="display:flex;gap:8px;margin-top:15px;flex-wrap:wrap">
+        <button id="updateInvoiceBtn" class="btn" style="flex:1 1 100%;background:#16a34a;color:#fff;display:none;font-weight:800" onclick="updateInvoiceDirect()">✅ Invoice Update করুন (বর্তমান তথ্য অনুযায়ী)</button>
         <button id="cashSaleBtn" class="btn" style="flex:1;background:#2563eb;color:#fff" onclick="cashSaleAction()">নগদ টাকা →</button>
         <button id="dueSaleBtn" class="btn secondary" style="flex:1" onclick="openDueCustomerPage()">বাকি →</button>
         <button class="btn secondary" onclick="printPOS()">🖨️ Print</button>
@@ -824,9 +825,7 @@ function renderDashboard(){
  dStock.textContent=money(b.products.reduce((a,x)=>a+x.buy*x.stock,0));
  recentTable.innerHTML=[...b.sales.map(x=>({...x,kind:'বিক্রয়'})),...b.purchases.map(x=>({...x,kind:'ক্রয়'}))].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8).map(x=>`<tr><td><button class="invoice-link" onclick="previewInvoice('${x.invoice}')">${esc(x.invoice)}</button></td><td>${x.kind}</td><td>${esc(x.party)}</td><td>${x.date}</td><td>${money(x.total)}</td><td><button class="btn secondary" onclick="editInvoice('${x.invoice}')">Edit</button> <button class="btn secondary" onclick="printInvoice('${x.invoice}')">Print</button></td></tr>`).join('')||'<tr><td colspan="6" class="empty">কোনো Invoice নেই</td></tr>';
 }
-function renderSales(){
- salesTable.innerHTML=biz().sales.map(x=>`<tr><td><button class="invoice-link" onclick="previewInvoice('${x.invoice}')">${esc(x.invoice)}</button></td><td>${esc(x.party)}</td><td>${x.date}</td><td>${money(x.total)}</td><td>Paid</td><td><button class="btn secondary" onclick="editInvoice('${x.invoice}')">Edit</button> <button class="btn secondary" onclick="printInvoice('${x.invoice}')">Print</button> <button class="btn danger" onclick="deleteInvoice('${x.invoice}','sale')">Delete</button></td></tr>`).join('')||'<tr><td colspan="7" class="empty">কোনো Sales নেই</td></tr>';
-}
+
 function productLowStockLimit(x){return Number(x.lowStock!=null?x.lowStock:5)}
 function renderProducts(){
  let q=(productSearch?.value||'').toLowerCase(), p=biz().products.filter(x=>(x.name+' '+x.barcode).toLowerCase().includes(q));
@@ -995,12 +994,8 @@ function renderCash(){
  cashTable.innerHTML=b.cash.map(x=>`<tr><td>${x.date}</td><td>${x.type==='In'?'Cash In':'Cash Out'}</td><td>${esc(x.note)}</td><td>${money(x.amount)}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">কোনো Cash Entry নেই</td></tr>';
 }
 function renderExpenses(){expensesTable.innerHTML=biz().expenses.map(x=>`<tr><td>${x.date}</td><td>${esc(x.category)}</td><td>${esc(x.note)}</td><td>${money(x.amount)}</td><td><button class="btn danger" onclick="removeExpense(${x.id})">Delete</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty">কোনো খরচ নেই</td></tr>'}
-function saleCost(b,x){return (x.items||[]).reduce((sum,i)=>{let p=b.products.find(p=>p.id==i.productId);return sum+(i.qty||0)*(i.cost!=null?i.cost:(p?p.buy:0));},0)}
-function periodPL(b,start,end,label){
- let sales=b.sales.filter(x=>x.date>=start&&x.date<=end), purchases=b.purchases.filter(x=>x.date>=start&&x.date<=end), expenses=b.expenses.filter(x=>x.date>=start&&x.date<=end);
- let revenue=sales.reduce((a,x)=>a+x.total,0), cogs=sales.reduce((a,x)=>a+saleCost(b,x),0), expense=expenses.reduce((a,x)=>a+x.amount,0), purchase=purchases.reduce((a,x)=>a+x.total,0);
- return {label,revenue,cogs,gross:revenue-cogs,expense,net:revenue-cogs-expense,purchase};
-}
+
+
 function renderReports(){
  let b=biz(), now=new Date(), y=now.getFullYear(), m=String(now.getMonth()+1).padStart(2,'0'), today=now.toISOString().slice(0,10);
  if(reportDay && !reportDay.value) reportDay.value=today;
@@ -1072,17 +1067,9 @@ function renderSalesSummary(){
   saleYear.textContent=money(yearTotal); saleDue.textContent=money(cashSales);
 }
 
-function getAccountingEntries(b, dateFilter){
- let e=[]; const add=(date,ref,desc,d,c)=>{if(!dateFilter||date===dateFilter)e.push({date,ref,desc,debit:Number(d||0),credit:Number(c||0)})};
- (b.sales||[]).forEach(x=>{let total=Number(x.total||0),cost=saleCost(b,x),a=accountById(x.paymentAccount||'cash');add(x.date,x.invoice,'Sales — '+(x.party||'Cash Sale'),total,0);add(x.date,x.invoice,'Sales Revenue',0,total);if(cost){add(x.date,x.invoice,'Cost of Sales',cost,0);add(x.date,x.invoice,'Inventory / Stock',0,cost)}});
- (b.purchases||[]).forEach(x=>{let total=Number(x.total||0),a=accountById(x.paymentAccount||'cash');add(x.date,x.invoice,'Inventory / Purchase',total,0);add(x.date,x.invoice,a?.name||'Cash',0,total)});
- (b.expenses||[]).forEach(x=>{let amt=Number(x.amount||0);add(x.date,x.id||'EXP','Expense — '+(x.category||'General'),amt,0);add(x.date,x.id||'EXP','Cash / Account',0,amt)});
- (b.cash||[]).forEach(x=>{if(x.transferId)return;let amt=Number(x.amount||0),a=accountById(x.accountId||'cash');if(x.type==='In'){add(x.date,x.id||'CASH','Cash In — '+(x.note||''),amt,0);add(x.date,x.id||'CASH','Other / Capital',0,amt)}else{add(x.date,x.id||'CASH','Cash Out — '+(x.note||''),0,amt);add(x.date,x.id||'CASH','Other / Expense',amt,0)}});
- let seen={}; (b.cash||[]).filter(x=>x.transferId).forEach(x=>{if(seen[x.transferId])return;let pair=(b.cash||[]).find(y=>y.transferId===x.transferId&&y.id!==x.id);if(!pair)return;seen[x.transferId]=1;let from=x.type==='Out'?x:pair,to=x.type==='In'?x:pair,amt=Number(from.amount||to.amount||0);add(from.date,from.transferId,'Transfer — '+accountById(from.accountId).name,0,amt);add(to.date,to.transferId,'Transfer — '+accountById(to.accountId).name,amt,0)});
- return e.sort((a,z)=>String(a.date).localeCompare(String(z.date)));
-}
-function renderTrialBalance(){let b=biz(), date=trialDate?.value||'';let entries=getAccountingEntries(b,date),m={};entries.forEach(x=>{let d=x.desc.includes('Sales Revenue')?'Sales Revenue':x.desc.includes('Cost of Sales')?'Cost of Sales':x.desc.includes('Inventory')?'Inventory / Stock':x.desc.includes('Expense')?'Expenses':x.desc.includes('Transfer')?x.desc.split(' — ')[1]:x.desc.includes('Sales — ')?(accountById('cash')?.name||'Cash'):x.desc.includes('Purchase')?(accountById('cash')?.name||'Cash'):x.desc.includes('Cash In')?'Cash / Account':x.desc.includes('Cash Out')?'Cash / Account':x.desc.includes('Other / Capital')?'Capital / Other':x.desc.includes('Other / Expense')?'Other / Expense':x.desc;m[x.desc]=m[x.desc]||{d:0,c:0};m[x.desc].d+=x.debit;m[x.desc].c+=x.credit});let rows=Object.entries(m).filter(([k,v])=>v.d||v.c);let td=rows.reduce((a,[,v])=>a+v.d,0),tc=rows.reduce((a,[,v])=>a+v.c,0);tbDebit.textContent=money(td);tbCredit.textContent=money(tc);tbDiff.textContent=money(td-tc);trialTable.innerHTML=rows.map(([k,v])=>`<tr><td>${esc(k)}</td><td>${money(v.d)}</td><td>${money(v.c)}</td></tr>`).join('')||'<tr><td colspan="3" class="empty">কোনো হিসাব নেই</td></tr>'}
-function renderDayBook(){let b=biz(), date=daybookDate?.value||'';let rows=getAccountingEntries(b,date),d=rows.reduce((a,x)=>a+x.debit,0),c=rows.reduce((a,x)=>a+x.credit,0);dbCount.textContent=rows.length;dbDebit.textContent=money(d);dbCredit.textContent=money(c);daybookTable.innerHTML=rows.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.ref)}</td><td>${esc(x.desc)}</td><td>${money(x.debit)}</td><td>${money(x.credit)}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">কোনো লেনদেন নেই</td></tr>'}
+
+
+
 
 function ensureBusinessData(){
  db.businesses.forEach(b=>{
@@ -1099,7 +1086,7 @@ function currentPermissions(){let u=currentUser;if(!u)return [];if(!Array.isArra
 function can(page){let ps=currentPermissions();let p=(page==='purchaseList'||page==='purchaseSummary')?'purchase':(page==='salesSummary'?'sales':page);return ps.includes('*')||ps.includes(p)}
 function requirePerm(page){if(!can(page)){alert('এই User-এর এই কাজের Permission নেই।');return false}return true}
 function accountById(idv){return biz().accounts.find(a=>String(a.id)===String(idv))||biz().accounts[0]}
-function accountBalance(aid){let b=biz(),a=accountById(aid),bal=+(a?.opening||0);b.cash.filter(x=>String(x.accountId||'cash')===String(a.id)).forEach(x=>bal+=(x.type==='In'?1:-1)*Number(x.amount||0));b.sales.filter(x=>String(x.paymentAccount||'cash')===String(a.id)).forEach(x=>bal+=Number(x.paid!=null?x.paid:x.total||0));b.purchases.filter(x=>String(x.paymentAccount||'cash')===String(a.id)).forEach(x=>bal-=Number(x.paid!=null?x.paid:x.total||0));return bal}
+
 function renderAccounts(){let b=biz();if(document.getElementById('posAccount'))document.getElementById('posAccount').innerHTML=b.accounts.map(a=>`<option value=\"${a.id}\">${esc(a.name)}</option>`).join('');if(document.getElementById('purAccount'))document.getElementById('purAccount').innerHTML=b.accounts.map(a=>`<option value=\"${a.id}\">${esc(a.name)}</option>`).join('');if(!accountsTable)return;accountsTable.innerHTML=b.accounts.map(a=>{let ins=b.cash.filter(x=>String(x.accountId||'cash')===String(a.id)&&x.type==='In').reduce((n,x)=>n+Number(x.amount||0),0)+b.sales.filter(x=>String(x.paymentAccount||'cash')===String(a.id)).reduce((n,x)=>n+Number(x.paid!=null?x.paid:x.total||0),0);let outs=b.cash.filter(x=>String(x.accountId||'cash')===String(a.id)&&x.type==='Out').reduce((n,x)=>n+Number(x.amount||0),0)+b.purchases.filter(x=>String(x.paymentAccount||'cash')===String(a.id)).reduce((n,x)=>n+Number(x.paid!=null?x.paid:x.total||0),0);return `<tr><td><b>${esc(a.name)}</b></td><td>${esc(a.type||'Other')}</td><td>${money(a.opening)}</td><td>${money(ins)}</td><td>${money(outs)}</td><td><b>${money(accountBalance(a.id))}</b></td></tr>`}).join('')}
 function openAccount(aid){if(!requirePerm('coa')&&!requirePerm('cash'))return;let a=aid?biz().accounts.find(x=>String(x.id)===String(aid)):{id:0,name:'',type:'Cash',category:'Asset',opening:0};modalTitle.textContent=aid?'Account Edit':'নতুন Account';modalBody.innerHTML=`<div class="form-grid"><div class="field"><label>Account Name</label><input id="aName" value="${esc(a.name)}"></div><div class="field"><label>Account Type</label><select id="aType"><option value="Cash" ${a.type==='Cash'?'selected':''}>Cash</option><option value="Bank" ${a.type==='Bank'?'selected':''}>Bank</option><option value="Mobile Wallet" ${a.type==='Mobile Wallet'?'selected':''}>Mobile Wallet</option><option value="Other" ${a.type==='Other'?'selected':''}>Other</option></select></div><div class="field"><label>Accounting Category</label><select id="aCategory"><option value="Asset" ${(a.category||'Asset')==='Asset'?'selected':''}>Asset</option><option value="Liability" ${a.category==='Liability'?'selected':''}>Liability</option><option value="Equity" ${a.category==='Equity'?'selected':''}>Equity</option><option value="Revenue" ${a.category==='Revenue'?'selected':''}>Revenue</option><option value="Expense" ${a.category==='Expense'?'selected':''}>Expense</option><option value="COGS" ${a.category==='COGS'?'selected':''}>Cost of Sales</option></select></div><div class="field"><label>Opening Balance</label><input id="aOpening" type="number" value="${a.opening||0}"></div></div><div style="margin-top:18px"><button class="btn" onclick="saveAccount(${a.id?`'${a.id}'`:'0'})">Save</button></div>`;modal.classList.add('show')}
 function saveAccount(aid){if(!requirePerm('coa')&&!requirePerm('cash'))return;let b=biz(),name=aName.value.trim();if(!name){alert('Account Name দিন।');return}if(aid&&aid!=='0'){let a=b.accounts.find(x=>String(x.id)===String(aid));if(a)Object.assign(a,{name,type:aType.value,category:aCategory.value,opening:+aOpening.value||0})}else b.accounts.push({id:'acc_'+id(),name,type:aType.value,category:aCategory.value,opening:+aOpening.value||0});closeModal();save()}
@@ -1252,25 +1239,7 @@ function renderLedger(){
  lOpening.textContent=money(opening);lDebit.textContent=money(d);lCredit.textContent=money(c);lClosing.textContent=money(balance);
  let run=0;ledgerTable.innerHTML=rows.map(x=>{run+=x.debit-x.credit;return `<tr><td>${x.date}</td><td>${esc(x.ref)}</td><td>${esc(x.desc)}</td><td>${money(x.debit)}</td><td>${money(x.credit)}</td><td>${money(run)}</td></tr>`}).join('')||'<tr><td colspan="6" class="empty">কোনো Ledger Entry নেই</td></tr>';
 }
-function renderBalance(){
- let b=biz();
- let cash=getUnifiedCashBalance(b);
- let stock=b.products.reduce((a,x)=>a+Number(x.buy||0)*Number(x.stock||0),0);
- let recv=b.parties.filter(p=>String(p.type).toLowerCase().includes('customer')).reduce((a,p)=>a+Math.max(0,Number(p.balance||0)),0);
- let pay=b.parties.filter(p=>String(p.type).toLowerCase().includes('supplier')).reduce((a,p)=>a+Math.max(0,-Number(p.balance||0)),0);
- let revenue=b.sales.reduce((a,x)=>a+Number(x.total||0),0);
- let cogs=b.sales.reduce((a,x)=>a+saleCost(b,x),0);
- let expense=b.expenses.reduce((a,x)=>a+Number(x.amount||0),0);
- let profit=revenue-cogs-expense;
- let capital=cash+recv+stock-pay-profit;
- bsCash.textContent=money(cash);bsStock.textContent=money(stock);bsRecv.textContent=money(recv);bsPay.textContent=money(pay);
- balanceTable.innerHTML=[
-  ['সম্পদ (Assets)','',true],
-  ['Cash & Bank',cash],['Inventory / Stock',stock],['Customer Receivable',recv],['Total Assets',cash+stock+recv,true],
-  ['দায় (Liabilities)','',true],['Supplier Payable',pay],['মূলধন (Owner Capital)',capital],['চলতি লাভ / ক্ষতি',profit],['মোট দায় + মূলধন',pay+capital+profit,true],
-  ['Balance Difference',(cash+stock+recv)-(pay+capital+profit),true]
- ].map(r=>`<tr${r[2]?' class="total"':''}><td>${r[0]}</td><td>${r[1]===''?'':money(r[1])}</td></tr>`).join('');
-}
+
 function renderOpening(){
  let b=biz();
  openingTable.innerHTML=b.parties.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.type)}</td><td>${money(p.balance)}</td><td><button class="btn secondary" onclick="openOpening(${p.id})">Edit</button></td></tr>`).join('')||'<tr><td colspan="4" class="empty">কোনো Party নেই</td></tr>';
@@ -1332,8 +1301,8 @@ function openDueCustomerPage(){
       <datalist id="dueCustomerList">${customers.map(p=>`<option value="${esc(p.name)}">`).join('')}</datalist>
     </div>
     <div class="field"><label>কাস্টমার মোবাইল নম্বর *</label><input id="duePhone" value="${esc(presetParty?presetParty.phone||'':'')}" placeholder="+88 XXXXXXXXXX"></div>
-    <div class="field"><label>নগদ প্রদান</label><input id="dueCash" type="number" min="0" value="0" oninput="updateDueRemaining()"></div>
-    <div class="field"><label>অবশিষ্ট বাকি</label><input id="dueRemaining" value="${calc.total.toFixed(2)}" readonly></div>
+    <div class="field"><label>নগদ প্রদান</label><input id="dueCash" type="number" min="0" value="${_posEditId?Number(document.getElementById('posCashReceived')?.value||0).toFixed(2):'0'}" oninput="updateDueRemaining()"></div>
+    <div class="field"><label>অবশিষ্ট বাকি</label><input id="dueRemaining" value="${(_posEditId?Math.max(0,calc.total-Number(document.getElementById('posCashReceived')?.value||0)):calc.total).toFixed(2)}" readonly></div>
   </div>
   <div style="margin-top:18px"><button class="btn" onclick="saveDueCustomerPage()">বিক্রি করুন</button></div>`;
   modal.classList.add('show');
@@ -1387,6 +1356,7 @@ function newSalePOS(){
   _posEditId=0; _posItems=[];
   posParty.value='Cash Sale'; posDate.value=today(); _saleMode='cash'; if(document.getElementById('posDiscount'))document.getElementById('posDiscount').value=0; if(document.getElementById('posCashReceived'))document.getElementById('posCashReceived').value=0; if(document.getElementById('posAccount'))document.getElementById('posAccount').value='cash'; setSaleMode('cash');
   posInvoiceNo.textContent='নতুন Invoice';
+  if(document.getElementById('updateInvoiceBtn'))document.getElementById('updateInvoiceBtn').style.display='none';
   renderPOSProducts(); renderPOSItems(); posRecalc();
   setTimeout(()=>posBarcode.focus(),50);
 }
@@ -1401,7 +1371,16 @@ function loadSalePOS(invoiceId){
   _posItems=(x.items||[]).map(i=>({productId:i.productId,qty:+i.qty,price:+i.price}));
   posParty.value=x.party||'Cash Sale'; posDate.value=x.date||today(); _saleMode=x.saleType==='credit'?'credit':'cash'; if(document.getElementById('posDiscount'))document.getElementById('posDiscount').value=Number(x.discount||0); if(document.getElementById('posCashReceived'))document.getElementById('posCashReceived').value=Number(x.paid||0); if(document.getElementById('posAccount'))document.getElementById('posAccount').value=x.paymentAccount||'cash'; setSaleMode(_saleMode);
   posInvoiceNo.textContent='Edit: '+x.invoice;
+  if(document.getElementById('updateInvoiceBtn'))document.getElementById('updateInvoiceBtn').style.display='block';
   renderPOSProducts(); renderPOSItems(); posRecalc();
+}
+function updateInvoiceDirect(){
+  // এই ইনভয়েসের বর্তমান Sale Type (Cash/Credit) ও Paid Amount অপরিবর্তিত রেখেই সরাসরি Update করে —
+  // তাই বাকিতে বিক্রয় ইনভয়েস এডিট করলে "নগদ প্রদান" ভুলবশত 0 হয়ে যাওয়ার সমস্যা এড়ানো যায়।
+  if(!_posEditId){alert('এটি একটি নতুন Invoice — আগে নগদ/বাকি বাটন দিয়ে Save করুন।');return;}
+  if(!_posItems.length){alert('কমপক্ষে ১টি পণ্য যোগ করুন।');return;}
+  markSaleButton(_saleMode);
+  savePOS();
 }
 function posBarcodeKey(e){
   if(e.key!=='Enter')return;
@@ -1910,7 +1889,7 @@ function printInvoice(invoice){
  w.document.write(`<html><head><title>${esc(x.invoice)}</title><style>@page{size:${paper==='A4'?'A4':'auto'};margin:${paper==='A4'?'12mm':'3mm'}}*{box-sizing:border-box}body{font-family:Arial,sans-serif;width:${width};margin:0 auto;padding:${paper==='A4'?'8mm':'2mm'};font-size:${paper==='A4'?'12px':'10px'}}.head{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:6px}.logo{max-width:${paper==='A4'?'100px':'55px'};max-height:55px;object-fit:contain}h2{margin:2px 0;font-size:${paper==='A4'?'20px':'14px'}}h1{font-size:${paper==='A4'?'22px':'14px'};margin:4px 0}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{padding:4px 2px;text-align:left;word-break:break-word}th{font-size:9px}td{font-size:9px}.total{text-align:right;font-weight:bold;margin-top:8px}.footer{border-top:1px dashed #999;margin-top:10px;padding-top:6px;text-align:center;font-size:9px}@media print{body{width:${width}}}${dcss}</style></head><body><div class="head"><div>${logo}<h2>${esc(b.name)}</h2><div>${esc(b.address||'')}</div><div>${esc(b.phone||'')}</div><div>${esc(b.email||'')}</div></div><h1>${x.type==='purchase'?'ক্রয়':'ইনভয়েস'}</h1></div><div class="meta">Invoice: ${esc(x.invoice)} &nbsp; | &nbsp; Date: ${esc(x.date)} &nbsp; | &nbsp; Party: ${esc(x.party||'Cash Sale')}</div><table><tr><th>পণ্য</th><th>Barcode</th><th>Qty</th><th>Price</th><th>Total</th></tr>${rows}</table><div class="total">Total: ${money(x.total)}<br>Paid: ${money(x.paid!=null?x.paid:x.total)}<br>Due: ${money(x.due||0)}</div><div class="footer">${esc(b.footer||'ধন্যবাদ। আবার আসবেন।')}</div></body></html>`);
  w.document.close();
 }
-function editInvoice(invoice){let b=biz(),x=b.sales.find(x=>x.invoice===invoice);if(x){startSalePOS(x.id);return}x=b.purchases.find(x=>x.invoice===invoice);if(x)openInvoice('purchase',x)}
+
 function deleteInvoice(invoice,type){if(!confirm('Invoice মুছে ফেলবেন? Stock পুনরায় সমন্বয় হবে।'))return;let b=biz(),list=type==='sale'?b.sales:b.purchases,x=list.find(v=>v.invoice===invoice);if(x)x.items.forEach(i=>{let p=b.products.find(p=>p.id===i.productId);if(p)p.stock += type==='sale'?i.qty:-i.qty});if(x){let idx=list.findIndex(v=>v.invoice===invoice);list.splice(idx,1)}save()}
 function saveSettings(silent){if(!requirePerm('settings'))return;let b=biz();Object.assign(b,{name:sName.value,phone:sPhone.value,email:sEmail.value,address:sAddress.value,currency:sCurrency.value||'৳',prefix:sPrefix.value||'INV',footer:sFooter.value,paper:sPaper?.value||'80mm',printer:sPrinter?.value||'',printLogo:sPrintLogo?.value||'yes',invoiceDesign:sInvoiceDesign?.value||'classic',themeColor:sThemeColor?.value||'#6b57d9'});save();applyTheme();if(!silent){alert('Settings Save হয়েছে। Invoice Design ও Theme Color-ও Save হয়েছে।')}else if(typeof showAutoSaveTick==='function'){showAutoSaveTick();}}
 function toggleProfileMenu(){document.getElementById('profileMenu').classList.toggle('show')}
@@ -2030,47 +2009,12 @@ function returnedQty(b, type, invoiceId, productId){
   let arr=type==='sale'?b.salesReturns:b.purchaseReturns;
   return arr.filter(r=>r.invoiceId===invoiceId).reduce((n,r)=>n+(r.items||[]).filter(i=>i.productId==productId).reduce((a,i)=>a+Number(i.qty||0),0),0);
 }
-function renderReturnPage(){
-  let b=biz();
-  if(document.getElementById('retSalesTotal')) document.getElementById('retSalesTotal').textContent=money(b.salesReturns.reduce((a,x)=>a+x.total,0));
-  if(document.getElementById('retPurchaseTotal')) document.getElementById('retPurchaseTotal').textContent=money(b.purchaseReturns.reduce((a,x)=>a+x.total,0));
-  if(document.getElementById('retAdjCount')) document.getElementById('retAdjCount').textContent=b.stockAdjustments.length;
-  if(document.getElementById('returnsTable')){
-    let rows=[...b.salesReturns.map(x=>({...x,kind:'Sales Return',party:x.party})),...b.purchaseReturns.map(x=>({...x,kind:'Purchase Return',party:x.party}))].sort((a,b)=>b.date.localeCompare(a.date));
-    document.getElementById('returnsTable').innerHTML=rows.map(x=>`<tr><td>${x.date}</td><td>${x.kind}</td><td>${esc(x.ref||'')}</td><td>${esc(x.party||'')}</td><td>${money(x.total)}</td><td>Completed</td></tr>`).join('')||'<tr><td colspan="6" class="empty">কোনো Return নেই</td></tr>';
-  }
-  if(document.getElementById('adjustmentTable')) document.getElementById('adjustmentTable').innerHTML=b.stockAdjustments.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(x=>`<tr><td>${x.date}</td><td>${esc(x.productName||'')}</td><td>${x.qty}</td><td>${x.type==='in'?'Stock In':'Stock Out'}</td><td>${esc(x.reason||'')}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">কোনো Adjustment নেই</td></tr>';
-}
 
-function openReturn(type){
-  if(!requirePerm(type==='sale'?'sales':'purchase'))return;
-  let b=biz(), list=type==='sale'?b.sales:b.purchases;
-  let active=list.filter(x=>x.status!=='Cancelled');
-  modalTitle.textContent=type==='sale'?'Sales Return':'Purchase Return';
-  modalBody.innerHTML=`<div class="form-grid"><div class="field"><label>Invoice</label><select id="retInvoice" onchange="renderReturnLines('${type}')">${active.map(x=>`<option value="${x.id}">${esc(x.invoice)} — ${esc(x.party)} — ${x.date}</option>`).join('')}</select></div><div class="field"><label>Date</label><input id="retDate" type="date" value="${today()}"></div><div class="field"><label>Refund/Receive Account</label><select id="retAccount">${b.accounts.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('')}</select></div></div><div id="returnLines" style="margin-top:16px"></div><div style="margin-top:18px"><button class="btn" onclick="saveReturn('${type}')">Save Return</button></div>`;
-  modal.classList.add('show');
-  renderReturnLines(type);
-}
-function renderReturnLines(type){
-  let b=biz(), idv=Number(document.getElementById('retInvoice')?.value), inv=(type==='sale'?b.sales:b.purchases).find(x=>x.id===idv), box=document.getElementById('returnLines'); if(!inv||!box){if(box)box.innerHTML='<div class="empty">কোনো Invoice নেই</div>';return}
-  box.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Product</th><th>Sold/Purchased</th><th>Already Returned</th><th>Return Qty</th><th>Price</th><th>Total</th></tr></thead><tbody>${(inv.items||[]).map((i,n)=>{let p=b.products.find(x=>x.id==i.productId)||{};let done=returnedQty(b,type,inv.id,i.productId);let max=Math.max(0,Number(i.qty||0)-done);return `<tr><td>${esc(p.name||'')}</td><td>${i.qty}</td><td>${done}</td><td><input class="retQty" data-index="${n}" data-max="${max}" data-price="${i.price||0}" type="number" min="0" max="${max}" step="0.01" value="0" onchange="calcReturn()"></td><td>${money(i.price||0)}</td><td class="retLineTotal">${money(0)}</td></tr>`}).join('')}</tbody></table></div><div style="text-align:right;font-size:20px;font-weight:800;margin-top:12px">Return Total: <span id="retTotal">${money(0)}</span></div>`;
-}
-function calcReturn(){let t=0;document.querySelectorAll('.retQty').forEach(x=>{let q=Math.min(Math.max(0,+x.value||0),+(x.dataset.max||0));x.value=q;t+=q*(+x.dataset.price||0);let td=x.closest('tr')?.querySelector('.retLineTotal');if(td)td.textContent=money(q*(+x.dataset.price||0))});if(document.getElementById('retTotal'))document.getElementById('retTotal').textContent=money(t)}
-function saveReturn(type){
-  let b=biz(), idv=Number(document.getElementById('retInvoice')?.value), inv=(type==='sale'?b.sales:b.purchases).find(x=>x.id===idv); if(!inv)return;
-  let items=[];document.querySelectorAll('.retQty').forEach((el,n)=>{let q=Math.min(Math.max(0,+el.value||0),+(el.dataset.max||0));if(q>0){let src=inv.items[n];items.push({productId:src.productId,qty:q,price:+src.price||0,cost:+src.cost||0})}});
-  if(!items.length){alert('Return Qty দিন।');return}
-  let total=items.reduce((a,i)=>a+i.qty*i.price,0), account=document.getElementById('retAccount').value||'cash';
-  if(type==='sale'){
-    items.forEach(i=>{let p=b.products.find(x=>x.id==i.productId);if(p)p.stock+=i.qty});
-    b.salesReturns.push({id:id(),ref:'SR-'+Date.now(),invoiceId:inv.id,invoice:inv.invoice,party:inv.party,date:document.getElementById('retDate').value||today(),items,total,accountId:account});
-  }else{
-    for(let i of items){let p=b.products.find(x=>x.id==i.productId);if(!p||p.stock<i.qty){alert(`${p?p.name:'Product'}-এর Stock যথেষ্ট নেই।`);return}}
-    items.forEach(i=>{let p=b.products.find(x=>x.id==i.productId);if(p)p.stock-=i.qty});
-    b.purchaseReturns.push({id:id(),ref:'PR-'+Date.now(),invoiceId:inv.id,invoice:inv.invoice,party:inv.party,date:document.getElementById('retDate').value||today(),items,total,accountId:account});
-  }
-  closeModal();save();renderReturnPage();alert(type==='sale'?'Sales Return Save হয়েছে। Stock বেড়েছে এবং Account থেকে refund ধরা হয়েছে।':'Purchase Return Save হয়েছে। Stock কমেছে এবং Account-এ refund/receive ধরা হয়েছে।');
-}
+
+
+
+
+
 function cancelInvoice(invId,type){
   if(!requirePerm(type==='sale'?'sales':'purchase'))return;
   let b=biz(), list=type==='sale'?b.sales:b.purchases, inv=list.find(x=>x.id===invId); if(!inv)return;
@@ -2090,7 +2034,7 @@ function saveStockAdjustment(){let b=biz(),pid=Number(document.getElementById('a
 function cancelBtn(inv,type){return inv.status==='Cancelled'?'<span class="badge">Cancelled</span>':`<button class="btn danger" onclick="cancelInvoice(${inv.id},'${type}')">Cancel</button>`}
 function renderSales(){salesTable.innerHTML=biz().sales.map(x=>`<tr><td><button class="invoice-link" onclick="previewInvoice('${x.invoice}')">${esc(x.invoice)}</button></td><td>${esc(x.party)}</td><td>${x.date}</td><td>${money(x.total)}</td><td>Paid</td><td>${x.status==='Cancelled'?'<span class="badge">Cancelled</span>':'Active'}</td><td><button class="btn secondary" onclick="editInvoice('${x.invoice}')">Edit</button> <button class="btn secondary" onclick="printInvoice('${x.invoice}')">Print</button> ${x.status==='Cancelled'?'<span></span>':`<button class="btn" onclick="openReturn('sale');setTimeout(()=>{let e=document.getElementById('retInvoice');if(e)e.value='${x.id}',renderReturnLines('sale')},50)">Return</button> ${cancelBtn(x,'sale')}`}</td></tr>`).join('')||'<tr><td colspan="7" class="empty">কোনো Sales নেই</td></tr>';}
 // Replace account/stock/report/accounting calculations so cancelled invoices and returns are reflected.
-accountBalance=function(aid){let b=biz(),a=accountById(aid),bal=+(a?.opening||0);b.cash.filter(x=>String(x.accountId||'cash')===String(a.id)).forEach(x=>bal+=(x.type==='In'?1:-1)*Number(x.amount||0));b.sales.filter(x=>x.status!=='Cancelled'&&String(x.paymentAccount||'cash')===String(a.id)).forEach(x=>bal+=Number(x.paid!=null?x.paid:x.total||0));b.purchases.filter(x=>x.status!=='Cancelled'&&String(x.paymentAccount||'cash')===String(a.id)).forEach(x=>bal-=Number(x.paid!=null?x.paid:x.total||0));b.salesReturns.forEach(x=>{if(String(x.accountId||'cash')===String(a.id))bal-=Number(x.total||0)});b.purchaseReturns.forEach(x=>{if(String(x.accountId||'cash')===String(a.id))bal+=Number(x.total||0)});return bal}
+
 saleCost=function(b,x){if(x.status==='Cancelled')return 0;let c=(x.items||[]).reduce((sum,i)=>sum+(i.qty||0)*(i.cost!=null?i.cost:(b.products.find(p=>p.id==i.productId)?.buy||0)),0);let returned=b.salesReturns.filter(r=>r.invoiceId===x.id).reduce((sum,r)=>sum+(r.items||[]).reduce((a,i)=>a+i.qty*(i.cost!=null?i.cost:(b.products.find(p=>p.id==i.productId)?.buy||0)),0),0);return Math.max(0,c-returned)}
 periodPL=function(b,start,end,label){let sales=b.sales.filter(x=>x.status!=='Cancelled'&&x.date>=start&&x.date<=end),purchases=b.purchases.filter(x=>x.status!=='Cancelled'&&x.date>=start&&x.date<=end),expenses=b.expenses.filter(x=>x.date>=start&&x.date<=end),sr=b.salesReturns.filter(x=>x.date>=start&&x.date<=end),pr=b.purchaseReturns.filter(x=>x.date>=start&&x.date<=end);let revenue=sales.reduce((a,x)=>a+x.total,0)-sr.reduce((a,x)=>a+x.total,0),cogs=sales.reduce((a,x)=>a+saleCost(b,x),0),expense=expenses.reduce((a,x)=>a+x.amount,0),purchase=purchases.reduce((a,x)=>a+x.total,0)-pr.reduce((a,x)=>a+x.total,0);return {label,revenue,cogs,gross:revenue-cogs,expense,net:revenue-cogs-expense,purchase}}
 
@@ -2103,8 +2047,8 @@ getAccountingEntries=function(b,dateFilter){let rows=[];const add=(date,ref,desc
  b.purchaseReturns.forEach(r=>{add(r.date,r.ref,'Purchase Return — '+r.party,0,Number(r.total));add(r.date,r.ref,'Cash / Account Received',Number(r.total),0);let c=r.items.reduce((a,i)=>a+i.qty*(i.cost||0),0);if(c){add(r.date,r.ref,'Cost of Inventory Return',c,0);add(r.date,r.ref,'Inventory',0,c)}});
  b.stockAdjustments.forEach(r=>{let p=b.products.find(x=>x.id==r.productId),v=Number(r.qty||0)*(p?.buy||0);if(!v)return;if(r.type==='in'){add(r.date,'ADJ','Inventory Adjustment In — '+r.productName,v,0);add(r.date,'ADJ','Stock Adjustment Gain',0,v)}else{add(r.date,'ADJ','Stock Adjustment Loss',v,0);add(r.date,'ADJ','Inventory Adjustment Out — '+r.productName,0,v)}});
  return rows;}
-renderTrialBalance=function(){let b=biz(),rows=getAccountingEntries(b,trialDate?.value||'');let m={};rows.forEach(r=>{let k=r.desc.includes('Sales Revenue')?'Sales Revenue':r.desc.includes('Inventory')?'Inventory':r.desc.includes('Cost of Sales')?'Cost of Sales':r.desc.includes('Expense')?'Expense':r.desc.includes('Cash')||r.desc.includes('Payment')||r.desc.includes('Refund')||r.desc.includes('Received')?'Cash / Account':r.desc.includes('Stock Adjustment')?'Stock Adjustment':'Other';m[k]??={d:0,c:0};m[k].d+=r.debit;m[k].c+=r.credit});let d=Object.values(m).reduce((a,x)=>a+x.d,0),c=Object.values(m).reduce((a,x)=>a+x.c,0);if(tbDebit)tbDebit.textContent=money(d);if(tbCredit)tbCredit.textContent=money(c);if(tbDiff)tbDiff.textContent=money(Math.abs(d-c));if(trialTable)trialTable.innerHTML=Object.entries(m).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${money(v.d)}</td><td>${money(v.c)}</td></tr>`).join('')||'<tr><td colspan="3" class="empty">কোনো Entry নেই</td></tr>'}
-renderDayBook=function(){let b=biz(),rows=getAccountingEntries(b,daybookDate?.value||'');let d=rows.reduce((a,x)=>a+x.debit,0),c=rows.reduce((a,x)=>a+x.credit,0);if(dbCount)dbCount.textContent=rows.length;if(dbDebit)dbDebit.textContent=money(d);if(dbCredit)dbCredit.textContent=money(c);if(daybookTable)daybookTable.innerHTML=rows.map(x=>`<tr><td>${x.date}</td><td>${esc(x.ref)}</td><td>${esc(x.desc)}</td><td>${money(x.debit)}</td><td>${money(x.credit)}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">কোনো লেনদেন নেই</td></tr>'}
+
+
 const _oldRenderAll=renderAll; renderAll=function(){ensureV12Data();_oldRenderAll();renderReturnPage()};
 
 // ===== V13 Accounting Engine =====
